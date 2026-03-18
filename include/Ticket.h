@@ -16,6 +16,7 @@ public:
 	Ticket() :
 		owner(nullptr),
 		project(nullptr),
+		closed(false),
 		title(""),
 		description("")
 	{

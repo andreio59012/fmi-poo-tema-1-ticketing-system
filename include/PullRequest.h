@@ -22,7 +22,6 @@ private:
 
 	std::string title, description, review_comment;
 	std::map<std::string, std::string> changed_files;
-	std::set<Ticket*> related_tickets;
 
 public:
 	// Constructor without parameters
@@ -33,7 +32,6 @@ public:
 		title(""),
 		description(""),
 		review_comment(""),
-		related_tickets({}),
 		changed_files({})
 	{
 		if (LOG_CONSTRUCTORS)
@@ -46,16 +44,14 @@ public:
 		Project* project_ = nullptr,
 		const std::string& title_ = "",
 		const std::string& description_ = "",
-		const std::set<Ticket*>& related_tickets_ = {},
 		const std::map<std::string, std::string>& changed_files_ = {}
 	) :
-		project(project_),
 		owner(owner_),
+		project(project_),
 		state(PR_STATE_DRAFT),
 		title(title_),
 		description(description_),
 		review_comment(""),
-		related_tickets(related_tickets_),
 		changed_files(changed_files_)
 	{
 		if (LOG_CONSTRUCTORS)
@@ -70,7 +66,6 @@ public:
 		title(other.title),
 		description(other.description),
 		review_comment(other.review_comment),
-		related_tickets(other.related_tickets),
 		changed_files(other.changed_files)
 	{
 		if (LOG_CONSTRUCTORS)
@@ -86,7 +81,6 @@ public:
 		description = other.description;
 		review_comment = other.review_comment;
 		changed_files = other.changed_files;
-		related_tickets = other.related_tickets;
 
 		if (LOG_CONSTRUCTORS)
 			std::cout << "'PullRequest': Copy Operator.\n";
@@ -155,6 +149,13 @@ public:
 				for (auto const& pair : changed_files)
 					project->setFileContent(auth, pair.first, pair.second);
 		}
+	}
+
+	const std::map<std::string, std::string> getChangedFiles(User* auth)
+	{
+		if (project->getUserPerm(auth) >= USER_PERM_VIEWER)
+			return changed_files;
+		return {};
 	}
 
 	const std::string& getChangedFileContent(User* auth, const std::string& file_path) {

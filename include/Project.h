@@ -131,6 +131,13 @@ public:
 			description = description_;
 	}
 
+	const std::map<std::string, std::string> getFiles(User* auth)
+	{
+		if (getUserPerm(auth) >= USER_PERM_VIEWER)
+			return files;
+		return {};
+	}
+
 	const std::string& getFileContent(User* auth, const std::string& file_path) {
 		if (getUserPerm(auth) >= USER_PERM_VIEWER)
 			return files[file_path];
