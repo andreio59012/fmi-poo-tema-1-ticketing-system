@@ -12,33 +12,75 @@ std::vector<Project*> db_projects;
 std::vector<Ticket*> db_tickets;
 std::vector<PullRequest*> db_prs;
 
-void generate_sample_database_entries()
+// Forward Declarations
+void cli_home();
+
+void cli_user_view(User*);
+void cli_user_view_vector(std::vector<User*>);
+void cli_user_view_in_project(const Project*);
+void cli_user_update(User*);
+void cli_user_login();
+void cli_user_signup();
+void cli_user_logout();
+
+void cli_project_view(Project*);
+void cli_project_view_vector(std::vector<Project*>);
+void cli_project_view_in_user(const User*);
+void cli_project_create();
+void cli_project_update(Project*);
+void cli_project_modify_users(Project*);
+void cli_project_modify_user_default(Project*);
+
+void cli_ticket_view(Ticket*);
+void cli_ticket_view_vector(std::vector<Ticket*>);
+void cli_ticket_view_in_user(const User*);
+void cli_ticket_view_in_project(const Project*);
+void cli_ticket_create(Project*);
+void cli_ticket_update(Ticket*);
+void cli_ticket_closed_update(Ticket* ticket);
+
+void cli_pr_view(PullRequest*);
+void cli_pr_view_vector(std::vector<PullRequest*>);
+void cli_pr_view_in_user(const User*);
+void cli_pr_view_in_project(const Project*);
+void cli_pr_create(Project*);
+void cli_pr_update(PullRequest*);
+void cli_pr_state_update(PullRequest*);
+void cli_pr_file_update(PullRequest*);
+
+int main()
 {
 	// Generate Users
-	std::cout << "Creating Users...";
+	std::cout << "Creating Users...\n";
 	db_users.push_back(new User("Samantha Gray", "password123"));			// school platform manager
 	db_users.push_back(new User("Jonathan Roberts", "NO_HACKING_ALLOWED"));	// school platform programmer 1
 	db_users.push_back(new User("Julie Rich", "march252006"));				// school platform programmer 2
 	db_users.push_back(new User("Andrew Knox", "CM%T_u&90q!A+Ojg*jA"));		// student guide platform manager
 	db_users.push_back(new User("Jerry Smith", "asdfggggg"));				// student guide platform programmer
 
+	for (User* u : db_users)
+		std::cout << *u;
+
 	// Generate Projects
-	std::cout << "Creating Projects...\n";
+	std::cout << "\nCreating Projects...\n";
 	db_projects.push_back(new Project(
 		"FMEI School Website",
 		"Source code for FMEI school's official website.",
 		USER_PERM_VIEWER,
-		{ {db_users[0], USER_PERM_OWNER}, {db_users[1], USER_PERM_REVIEWER}, {db_users[2], USER_PERM_MAINTAINER}}
+		{ {db_users[0], USER_PERM_OWNER}, {db_users[1], USER_PERM_REVIEWER}, {db_users[2], USER_PERM_MAINTAINER} }
 	));
 	db_projects.push_back(new Project(
 		"FMEI Student Forums",
 		"Non-official FMEI forums, guides and info. Maintained by students, for students.",
 		USER_PERM_MAINTAINER,
-		{ {db_users[3], USER_PERM_OWNER}, {db_users[4], USER_PERM_REVIEWER}}
+		{ {db_users[3], USER_PERM_OWNER}, {db_users[4], USER_PERM_REVIEWER} }
 	));
 
+	for (Project* p : db_projects)
+		std::cout << *p;
+
 	// Generate Tickets
-	std::cout << "Creating Tickets...\n";
+	std::cout << "\nCreating Tickets...\n";
 	db_tickets.push_back(new Ticket(
 		db_users[0],
 		db_projects[0],
@@ -50,38 +92,41 @@ void generate_sample_database_entries()
 		db_users[1],
 		db_projects[0],
 		false,
-		"Database may be insecure", 
+		"Database may be insecure",
 		"We're storing all of the students' passwords in plain-text? Really? This needs to be addressed ASAP!"
 	));
 	db_tickets.push_back(new Ticket(
 		db_users[3],
 		db_projects[1],
 		false,
-		"Missing class courses", 
+		"Missing class courses",
 		"We haven't updated our course lists to include the newly-added Cybersec course."
 	));
 	db_tickets.push_back(new Ticket(
 		db_users[4],
 		db_projects[1],
 		false,
-		"No dark mode", 
+		"No dark mode",
 		"I'm gonna have to fix this soon, it hurts to look at."
 	));
 
+	for (Ticket* t : db_tickets)
+		std::cout << *t;
+
 	// Generate Pull Requests
-	std::cout << "Creating Pull Requests...\n";
+	std::cout << "\nCreating Pull Requests...\n";
 
 	db_prs.push_back(new PullRequest(
-		db_users[2], db_projects[0], 
-		"Fix titlebar color issue", 
+		db_users[2], db_projects[0],
+		"Fix titlebar color issue",
 		"Updated titlebar.css follow iOS 7 website specifications.",
-		{{"titlebar.css", "ios_color_tag = black"}}
+		{ {"titlebar.css", "ios_color_tag = black"} }
 	));
 
 	db_prs.push_back(new PullRequest(
 		db_users[1],
 		db_projects[1],
-		"Add 'secure' field to database", 
+		"Add 'secure' field to database",
 		"Surely this fixes all of our problems!",
 		{ {"database.oxl", "is_secure = true"} }
 	));
@@ -89,13 +134,16 @@ void generate_sample_database_entries()
 	db_prs.push_back(new PullRequest(
 		db_users[4],
 		db_projects[1],
-		"Add dark mode", 
+		"Add dark mode",
 		"Needs more testing",
 		{ { "settings.cfg", "dark_mode = false"}, {"home.html", "if (dark_mode)\n\tmake_dark();"} }
 	));
 
+	for (PullRequest* pr : db_prs)
+		std::cout << *pr;
+
 	// Review Pull Requests
-	std::cout << "Reviewing pull requests...\n";
+	std::cout << "\nReviewing pull requests...\n";
 
 	db_prs[0]->setState(db_users[0], PR_STATE_MERGED, "Looks good to me!");
 	db_tickets[0]->setClosed(db_users[0], true);
@@ -107,47 +155,18 @@ void generate_sample_database_entries()
 	db_prs[2]->setChangedFileContent(db_users[4], "gallery.html", "if (dark_mode)\n\tmake_dark();");
 	db_prs[2]->setState(db_users[2], PR_STATE_MERGED, "Nice, that was fast!");
 	db_tickets[3]->setClosed(db_users[2], true);
-}
 
-// Forward Declarations
-void cli_home();
+	for (PullRequest* pr : db_prs)
+		std::cout << *pr;
 
-void cli_user_view(User*);
-void cli_user_view_vector(std::vector<User*>);
-void cli_user_view_in_project(Project*);
-void cli_user_update(User*);
-void cli_user_login();
-void cli_user_signup();
-void cli_user_logout();
+	// Finish
+	std::cout << "\nFinished generating sample data.\nEnter 0 to go to the Interactive CLI, or 1 to exit: #";
 
-void cli_project_view(Project*);
-void cli_project_view_vector(std::vector<Project*>);
-void cli_project_view_in_user(User*);
-void cli_project_create();
-void cli_project_update(Project*);
-void cli_project_modify_users(Project*);
+	int x; std::cin >> x;
 
-void cli_ticket_view(Ticket*);
-void cli_ticket_view_vector(std::vector<Ticket*>);
-void cli_ticket_view_in_user(User*);
-void cli_ticket_view_in_project(Project*);
-void cli_ticket_create(Project*);
-void cli_ticket_update(Ticket*);
-void cli_ticket_closed_update(Ticket* ticket);
+	if (x == 0)
+		cli_home();
 
-void cli_pr_view(PullRequest*);
-void cli_pr_view_vector(std::vector<PullRequest*>);
-void cli_pr_view_in_user(User*);
-void cli_pr_view_in_project(Project*);
-void cli_pr_create(Project*);
-void cli_pr_update(PullRequest*);
-void cli_pr_state_update(PullRequest*);
-void cli_pr_file_update(PullRequest*);
-
-int main()
-{
-	generate_sample_database_entries();
-	cli_home();
 	return 0;
 }
 
@@ -167,14 +186,14 @@ int cli_menu(std::vector<std::string> options)
 {
 	std::cout << "Menus:\n";
 
-	for (int i = 0; i < options.size(); i++) {
+	for (int i = 0; i < (int)options.size(); i++) {
 		std::cout << "\t" << i + 1 << ". " << options[i] << "\n";
 	}
 
 	std::cout << "\nOption: #";
 	int option = 0;
 
-	while (option < 1 || option > options.size()) {
+	while (option < 1 || option > (int)options.size()) {
 		std::cin >> option;
 		std::cin.clear();
 		std::cin.ignore();
@@ -189,13 +208,14 @@ void cli_home()
 
 	if (auth == nullptr)
 	{
-		int op = cli_menu({ "Log in", "Sign up", "View Users", "View Projects" });
+		int op = cli_menu({ "Log in", "Sign up", "View Users", "View Projects", "Exit"});
 
 		switch (op) {
 		case 1: cli_user_login(); break;
 		case 2: cli_user_signup(); break;
 		case 3: cli_user_view_vector(db_users); break;
 		case 4: cli_project_view_vector(db_projects); break;
+		case 5: return;
 		}
 	}
 	else {
@@ -208,6 +228,7 @@ void cli_home()
 			"View All Projects",
 			"Create New Project",
 			"Log out",
+			"Exit",
 			});
 
 		switch (op) {
@@ -219,6 +240,7 @@ void cli_home()
 		case 6: cli_project_view_vector(db_projects); break;
 		case 7: cli_project_create(); break;
 		case 8: cli_user_logout(); break;
+		case 9: return;
 		}
 	}
 }
@@ -262,13 +284,13 @@ void cli_user_view_vector(std::vector<User*> users) {
 	cli_clear();
 	std::cout << "Users:\n";
 
-	for (int i = 0; i < users.size(); i++)
+	for (int i = 0; i < (int)users.size(); i++)
 		std::cout << '\t' << i + 1 << ". " << users[i]->getUsername() << '\n';
 
 	std::cout << "\nSelect a user to view (or 0 to go home): #";
 	int idx = 0; std::cin >> idx;
 
-	if (idx > 0 && idx <= users.size())
+	if (idx > 0 && idx <= (int)users.size())
 		cli_user_view(users[idx - 1]);
 	else
 		cli_home();
@@ -276,7 +298,7 @@ void cli_user_view_vector(std::vector<User*> users) {
 
 void cli_user_view_in_project(Project* project) {
 	std::vector<User*> users = {};
-	for (int i = 0; i < db_users.size(); i++)
+	for (int i = 0; i < int(db_users.size()); i++)
 		if (project->getUserPerm(db_users[i]) != project->getDefaultUserPerm())
 			users.push_back(db_users[i]);
 
@@ -301,17 +323,37 @@ void cli_user_update(User* user) {
 
 void cli_user_login() {
 	cli_clear();
-	std::cout << "Users:\n";
 
-	for (int i = 0; i < db_users.size(); i++)
-		std::cout << '\t' << i + 1 << ". " << db_users[i]->getUsername() << '\n';
+	std::cout << "Logging up...\nUsername: ";
+	std::string username; std::cin >> username;
 
-	std::cout << "\nSelect a user to 'log in' as (or 0 to go home): #";
-	int idx = 0; std::cin >> idx;
+	User* target = nullptr;
 
-	if (idx > 0 && idx <= db_users.size())
-		auth = db_users[idx - 1];
+	for (User* u : db_users)
+		if (u->getUsername() == username)
+			target = u;
 
+	if (target == nullptr) {
+		std::cout << "\nNo user with this name exists!\n";
+		cli_await();
+		cli_home();
+		return;
+	}
+
+	std::cout << "Password: ";
+	std::string password; std::cin >> password;
+
+	if (!target->isPasswordCorrect(password)) {
+		std::cout << "\nIncorrect password!\n";
+		cli_await();
+		cli_home();
+		return;
+	}
+
+	auth = target;
+	std::cout << "You are now logged in as user '" << auth->getUsername() << "'.\n";
+
+	cli_await();
 	cli_home();
 }
 
@@ -354,6 +396,7 @@ void cli_project_view(Project* project) {
 			"Update Project Details", 
 			"View Project's Users", 
 			"Update Project's Users", 
+			"Update Default Perms"
 			"View Project's Tickets", 
 			"View Project's Pull Requests", 
 			"Create New Ticket", 
@@ -365,11 +408,12 @@ void cli_project_view(Project* project) {
 		case 1: cli_project_update(project); break;
 		case 2: cli_user_view_in_project(project); break;
 		case 3: cli_project_modify_users(project); break;
-		case 4: cli_ticket_view_in_project(project); break;
-		case 5: cli_pr_view_in_project(project); break;
-		case 6: cli_ticket_create(project); break;
-		case 7: cli_pr_create(project); break;
-		case 8: cli_home(); break;
+		case 4: cli_project_modify_user_default(project); break;
+		case 5: cli_ticket_view_in_project(project); break;
+		case 6: cli_pr_view_in_project(project); break;
+		case 7: cli_ticket_create(project); break;
+		case 8: cli_pr_create(project); break;
+		case 9: cli_home(); break;
 		}
 	} else if (project->getUserPerm(auth) >= USER_PERM_MAINTAINER && auth != nullptr) {
 		int op = cli_menu({
@@ -414,21 +458,21 @@ void cli_project_view_vector(std::vector<Project*> projects) {
 	cli_clear();
 	std::cout << "Projects:\n";
 
-	for (int i = 0; i < projects.size(); i++)
+	for (int i = 0; i < int(projects.size()); i++)
 		std::cout << '\t' << i + 1 << ". " << projects[i]->getTitle(auth) << '\n';
 
 	std::cout << "\nSelect a project to view (or 0 to go home): #";
 	int idx = 0; std::cin >> idx;
 
-	if (idx > 0 && idx <= projects.size())
+	if (idx > 0 && idx <= int(projects.size()))
 		cli_project_view(projects[idx - 1]);
 	else
 		cli_home();
 }
 
-void cli_project_view_in_user(User* user) {
+void cli_project_view_in_user(const User* user) {
 	std::vector<Project*> projects = {};
-	for (int i = 0; i < db_projects.size(); i++)
+	for (int i = 0; i < int(db_projects.size()); i++)
 		if (db_projects[i]->getUserPerm(user) == USER_PERM_OWNER)
 			projects.push_back(db_projects[i]);
 
@@ -477,7 +521,7 @@ void cli_project_modify_users(Project* project) {
 
 	User* user = nullptr;
 
-	for (int i = 0; i < db_users.size(); i++) {
+	for (int i = 0; i < int(db_users.size()); i++) {
 		if (db_users[i]->getUsername() == username) {
 			user = db_users[i];
 			break;
@@ -488,6 +532,19 @@ void cli_project_modify_users(Project* project) {
 	int user_perm; std::cin >> user_perm;
 
 	project->setUserPerm(auth, user, user_perm);
+	std::cout << "Project user permissions updated.\n";
+
+	cli_await();
+	cli_home();
+}
+
+void cli_project_modify_user_default(Project* project) {
+	cli_clear();
+
+	std::cout << "Modifying Project User Default Permission...\nPermissions: (NONE = 0, VIEW = 1, MAINTAIN = 2, REVIEW = 3, ADMINISTRATE = 4): #";
+	int user_perm; std::cin >> user_perm;
+
+	project->setDefaultUserPerm(auth, user_perm);
 	std::cout << "Project user permissions updated.\n";
 
 	cli_await();
@@ -535,30 +592,30 @@ void cli_ticket_view_vector(std::vector<Ticket*> tickets) {
 	cli_clear();
 	std::cout << "Tickets:\n";
 
-	for (int i = 0; i < tickets.size(); i++)
+	for (int i = 0; i < int(tickets.size()); i++)
 		std::cout << '\t' << i + 1 << ". " << tickets[i]->getTitle(auth) << '\n';
 
 	std::cout << "\nSelect a ticket to view (or 0 to go home): #";
 	int idx = 0; std::cin >> idx;
 
-	if (idx > 0 && idx <= tickets.size())
+	if (idx > 0 && idx <= int(tickets.size()))
 		cli_ticket_view(tickets[idx - 1]);
 	else
 		cli_home();
 }
 
-void cli_ticket_view_in_user(User* user) {
+void cli_ticket_view_in_user(const User* user) {
 	std::vector<Ticket*> tickets = {};
-	for (int i = 0; i < db_tickets.size(); i++)
+	for (int i = 0; i < int(db_tickets.size()); i++)
 		if (db_tickets[i]->getOwner() == user)
 			tickets.push_back(db_tickets[i]);
 
 	cli_ticket_view_vector(tickets);
 }
 
-void cli_ticket_view_in_project(Project* project) {
+void cli_ticket_view_in_project(const Project* project) {
 	std::vector<Ticket*> tickets = {};
-	for (int i = 0; i < db_tickets.size(); i++)
+	for (int i = 0; i < int(db_tickets.size()); i++)
 		if (db_tickets[i]->getProject() == project)
 			tickets.push_back(db_tickets[i]);
 
@@ -615,7 +672,17 @@ void cli_ticket_closed_update(Ticket* ticket) {
 // PR
 void cli_pr_view(PullRequest* pr) {
 	cli_clear();
-	std::cout << "Viewing PR...\nTitle: " << pr->getTitle(auth) << "\nDescription: " << pr->getDescription(auth) << "\nChanged Files: \n";
+	std::cout << "Viewing PR...\nTitle: " << pr->getTitle(auth) << "\nDescription: " << pr->getDescription(auth) << "\nState: ";
+
+	switch (pr->getState()) {
+		case 0: std::cout << "Draft\n"; break;
+		case 1: std::cout << "Awaiting Review\n"; break;
+		case 2: std::cout << "Needs Changes\n"; break;
+		case 3: std::cout << "Merged\n"; break;
+		case 4: std::cout << "Blocked\n"; break;
+	}
+
+	std::cout << "Changed Files : \n";
 
 	for (std::pair<std::string, std::string> pair : pr->getChangedFiles(auth)) {
 		std::cout << pair.first << " : " << pair.second << "\n";
@@ -658,30 +725,30 @@ void cli_pr_view_vector(std::vector<PullRequest*> prs) {
 	cli_clear();
 	std::cout << "Pull Requests:\n";
 
-	for (int i = 0; i < prs.size(); i++)
+	for (int i = 0; i < int(prs.size()); i++)
 		std::cout << '\t' << i + 1 << ". " << prs[i]->getTitle(auth) << '\n';
 
 	std::cout << "\nSelect a pull request to view (or 0 to go home): #";
 	int idx = 0; std::cin >> idx;
 
-	if (idx > 0 && idx <= prs.size())
+	if (idx > 0 && idx <= int(prs.size()))
 		cli_pr_view(prs[idx - 1]);
 	else
 		cli_home();
 }
 
-void cli_pr_view_in_user(User* user) {
+void cli_pr_view_in_user(const User* user) {
 	std::vector<PullRequest*> prs = {};
-	for (int i = 0; i < db_prs.size(); i++)
+	for (int i = 0; i < int(db_prs.size()); i++)
 		if (db_prs[i]->getOwner() == user)
 			prs.push_back(db_prs[i]);
 
 	cli_pr_view_vector(prs);
 }
 
-void cli_pr_view_in_project(Project* project) {
+void cli_pr_view_in_project(const Project* project) {
 	std::vector<PullRequest*> prs = {};
-	for (int i = 0; i < db_prs.size(); i++)
+	for (int i = 0; i < int(db_prs.size()); i++)
 		if (db_prs[i]->getProject() == project)
 			prs.push_back(db_prs[i]);
 

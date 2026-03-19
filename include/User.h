@@ -61,7 +61,7 @@ public:
 
 	// OStream Operator (#TODO)
 	friend std::ostream& operator<<(std::ostream& os, const User& p) {
-		os << "'User': Cout for username '" << p.username << "'.\n";
+		os << "User:\n\tUsername: " << p.username << "\n\tPassword: " << p.password << "\n";
 		return os;
 	}
 
@@ -72,9 +72,9 @@ public:
 	}
 
 	// Getters & Setters
-	const std::string& getUsername() { return username; }
+	std::string getUsername () const { return username; }
 
-	bool isPasswordCorrect(const std::string& password_) {
+	bool isPasswordCorrect(const std::string& password_) const {
 		return password == password_;
 	}
 

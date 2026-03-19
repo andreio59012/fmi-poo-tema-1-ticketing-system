@@ -21,7 +21,7 @@ private:
 	int state;
 
 	std::string title, description, review_comment;
-	std::map<std::string, std::string> changed_files;
+	std::map<const std::string, std::string> changed_files;
 
 public:
 	// Constructor without parameters
@@ -44,7 +44,7 @@ public:
 		Project* project_ = nullptr,
 		const std::string& title_ = "",
 		const std::string& description_ = "",
-		const std::map<std::string, std::string>& changed_files_ = {}
+		const std::map<const std::string, std::string>& changed_files_ = {}
 	) :
 		owner(owner_),
 		project(project_),
@@ -90,7 +90,16 @@ public:
 
 	// OStream Operator (#TODO)
 	friend std::ostream& operator<<(std::ostream& os, const PullRequest& p) {
-		os << "'PullRequest': Cout for title '" << p.title << "'.\n";
+		os << "Pull Request:\n\tTitle: " << p.title << "\n\tDescription: " << p.description << "\n\tOwner: " << p.owner->getUsername() << "\n\tState: " << p.state << "\n\tReview Comment: " << p.review_comment << "\n";
+
+		if (p.changed_files.size() > 0) {
+			std::cout << "\tFiles: ";
+			for (auto& pair : p.changed_files) {
+				os << pair.first << ": " << pair.second << "; ";
+			}
+			std::cout << '\n';
+		}
+
 		return os;
 	}
 
@@ -104,31 +113,31 @@ public:
 	User* getOwner() const { return owner; }
 	Project* getProject() const { return project; }
 
-	const std::string& getTitle(User* auth) {
+	const std::string& getTitle(const User* auth) const {
 		if (project->getUserPerm(auth) >= USER_PERM_VIEWER)
 			return title;
 		return STRING_PRIVATE;
 	}
 
-	void setTitle(User* auth, const std::string& title_) {
+	void setTitle(const User* auth, const std::string& title_) {
 		if (auth == owner)
 			title = title_;
 	}
 
-	const std::string& getDescription(User* auth) {
+	const std::string& getDescription(const User* auth) const {
 		if (project->getUserPerm(auth) >= USER_PERM_VIEWER)
 			return title;
 		return STRING_PRIVATE;
 	}
 
-	void setDescription(User* auth, const std::string& description_) {
+	void setDescription(const User* auth, const std::string& description_) {
 		if (auth == owner)
 			description = description_;
 	}
 
-	bool getState() const { return state; }
+	const bool getState() const { return state; }
 
-	void setState(User* auth, const int state_, const std::string& review_comment_ = "")
+	void setState(const User* auth, const int state_, const std::string& review_comment_ = "")
 	{
 		if (state == PR_STATE_MERGED)
 			return;
@@ -151,20 +160,14 @@ public:
 		}
 	}
 
-	const std::map<std::string, std::string> getChangedFiles(User* auth)
+	const std::map<const std::string, std::string> getChangedFiles(const User* auth) const
 	{
 		if (project->getUserPerm(auth) >= USER_PERM_VIEWER)
 			return changed_files;
 		return {};
 	}
 
-	const std::string& getChangedFileContent(User* auth, const std::string& file_path) {
-		if (project->getUserPerm(auth) >= USER_PERM_VIEWER)
-			return changed_files[file_path];
-		return STRING_PRIVATE;
-	}
-
-	void setChangedFileContent(User* auth, const std::string& file_name, const std::string& file_content) {
+	void setChangedFileContent(const User* auth, const std::string& file_name, const std::string& file_content) {
 		if (auth == owner)
 			changed_files[file_name] = file_content;
 	}

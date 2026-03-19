@@ -14,9 +14,9 @@ const int USER_PERM_OWNER = 4;		// Change project settings.
 class Project 
 {
 private:
-	int default_user_perm;
 	std::string title, description;
-	std::map<User*, int> user_perms;
+	int default_user_perm;
+	std::map<const User*, int> user_perms;
 	std::map<std::string, std::string> files;
 
 public:
@@ -38,12 +38,12 @@ public:
 		const std::string& title_ = "", 
 		const std::string& description_ = "",
 		const int default_user_perm_ = USER_PERM_NONE,
-		const std::map<User*, int>& user_perms_ = {},
+		const std::map<const User*, int>& user_perms_ = {},
 		const std::map<std::string, std::string>& files_ = {}
 	) : 
-		default_user_perm(default_user_perm_),
 		title(title_),
 		description(description_),
+		default_user_perm(default_user_perm_),
 		user_perms(user_perms_),
 		files(files_)
 	{
@@ -53,9 +53,9 @@ public:
 
 	// Copy Constructor
 	Project(const Project& other) :
-		default_user_perm(other.default_user_perm),
 		title(other.title),
 		description(other.description),
+		default_user_perm(other.default_user_perm),
 		user_perms(other.user_perms),
 		files(other.files)
 	{
@@ -65,9 +65,9 @@ public:
 
 	// Copy Operator
 	Project& operator=(const Project& other) {
-		default_user_perm = other.default_user_perm;
 		title = other.title;
 		description = other.description;
+		default_user_perm = other.default_user_perm;
 		user_perms = other.user_perms;
 		files = other.files;
 
@@ -84,15 +84,33 @@ public:
 
 	// OStream Operator (#TODO)
 	friend std::ostream& operator<<(std::ostream& os, const Project& p) {
-		os << "'Project': Cout for title '" << p.title << "'.\n";
+		os << "Project:\n\tTitle: " << p.title << "\n\tDescription: " << p.description << "\n\tDefault User Permission: " << p.default_user_perm << "\n";
+
+		if (p.user_perms.size() > 0) {
+			std::cout << "\tUsers: ";
+			for (auto& pair : p.user_perms) {
+				os << pair.first->getUsername() << " (" << pair.second << "), ";
+			}
+			std::cout << '\n';
+		}
+
+		if (p.files.size() > 0) {
+			std::cout << "\tFiles: ";
+			for (auto& pair : p.files) {
+				os << pair.first << ": " << pair.second << "; ";
+			}
+			std::cout << '\n';
+		}
+
 		return os;
 	}
 
 	// Getters & Setters
-	int getUserPerm(User* user) {
-		if (user_perms.find(user) == user_perms.end())
+	int getUserPerm(const User* user) const {
+		auto a = user_perms.find(user);
+		if (a == user_perms.end())
 			return default_user_perm;
-		return user_perms[user];
+		return a->second;
 	}
 
 	void setUserPerm(User* auth, User* user, const int user_perm) {
@@ -104,47 +122,41 @@ public:
 		return default_user_perm;
 	}
 
-	void setDefaultUserPerm(User* auth, const int user_perm) {
+	void setDefaultUserPerm(const User* auth, const int user_perm) {
 		if (getUserPerm(auth) >= USER_PERM_OWNER)
 			default_user_perm = user_perm;
 	}
 
-	const std::string& getTitle(User* auth) {
+	const std::string& getTitle(const User* auth) const {
 		if (getUserPerm(auth) >= USER_PERM_VIEWER)
 			return title;
 		return STRING_PRIVATE;
 	}
 
-	void setTitle(User* auth, const std::string& title_) {
+	void setTitle(const User* auth, const std::string& title_) {
 		if (getUserPerm(auth) >= USER_PERM_OWNER)
 			title = title_;
 	}
 
-	const std::string& getDescription(User* auth) {
+	const std::string& getDescription(const User* auth) const {
 		if (getUserPerm(auth) >= USER_PERM_VIEWER)
 			return title;
 		return STRING_PRIVATE;
 	}
 
-	void setDescription(User* auth, const std::string& description_) {
+	void setDescription(const User* auth, const std::string& description_) {
 		if (getUserPerm(auth) >= USER_PERM_OWNER)
 			description = description_;
 	}
 
-	const std::map<std::string, std::string> getFiles(User* auth)
+	const std::map<std::string, std::string> getFiles(const User* auth) const
 	{
 		if (getUserPerm(auth) >= USER_PERM_VIEWER)
 			return files;
 		return {};
 	}
 
-	const std::string& getFileContent(User* auth, const std::string& file_path) {
-		if (getUserPerm(auth) >= USER_PERM_VIEWER)
-			return files[file_path];
-		return STRING_PRIVATE;
-	}
-
-	void setFileContent(User* auth, const std::string& file_name, const std::string& file_content) {
+	void setFileContent(const User* auth, const std::string& file_name, const std::string& file_content) {
 		if (getUserPerm(auth) >= USER_PERM_MAINTAINER)
 			files[file_name] = file_content;
 	}

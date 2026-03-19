@@ -6,8 +6,8 @@
 class Ticket
 {
 private:
-	Project* project;
 	User* owner;
+	Project* project;
 	bool closed;
 	std::string title, description;
 
@@ -59,8 +59,8 @@ public:
 		owner = other.owner;
 		project = other.project;
 		closed = other.closed;
-		description = other.description;
 		title = other.title;
+		description = other.description;
 
 		if (LOG_CONSTRUCTORS)
 			std::cout << "'Ticket': Copy Operator.\n";
@@ -70,7 +70,7 @@ public:
 
 	// OStream Operator (#TODO)
 	friend std::ostream& operator<<(std::ostream& os, const Ticket& p) {
-		os << "'Ticket': Cout for title '" << p.title << "'.\n";
+		os << "Ticket:\n\tTitle: " << p.title << "\n\tDescription: " << p.description << "\n\tOwner: " << p.owner->getUsername() << "\n\tClosed: " << p.closed << "\n";
 		return os;
 	}
 
@@ -84,31 +84,31 @@ public:
 	User* getOwner() const { return owner; }
 	Project* getProject() const { return project; }
 
-	const std::string& getTitle(User* auth) {
+	const std::string& getTitle(const User* auth) const {
 		if (project->getUserPerm(auth) >= USER_PERM_VIEWER)
 			return title;
 		return STRING_PRIVATE;
 	}
 
-	void setTitle(User* auth, const std::string& title_) {
+	void setTitle(const User* auth, const std::string& title_) {
 		if (auth == owner)
 			title = title_;
 	}
 
-	const std::string& getDescription(User* auth) {
+	const std::string& getDescription(const User* auth) const {
 		if (project->getUserPerm(auth) >= USER_PERM_VIEWER)
 			return title;
 		return STRING_PRIVATE;
 	}
 
-	void setDescription(User* auth, const std::string& description_) {
+	void setDescription(const User* auth, const std::string& description_) {
 		if (auth == owner)
 			description = description_;
 	}
 
 	bool getClosed() const { return closed; }
 
-	void setClosed(User* auth, const bool closed_) {
+	void setClosed(const User* auth, const bool closed_) {
 		if (auth == owner || project->getUserPerm(auth) >= USER_PERM_REVIEWER)
 			closed = closed_;
 	}
