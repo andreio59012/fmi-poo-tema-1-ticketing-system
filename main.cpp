@@ -138,13 +138,25 @@ int main()
 
 	// Finish
 	std::cout << "\nFinished generating sample data.\nEnter 0 to go to the Interactive CLI, or 1 to exit: #";
-
 	int x; std::cin >> x;
 
-	User* auth = nullptr;
-
-	if (x == 0)
+	if (x == 0) {
+		User* auth = nullptr;
 		cli_home(&db, auth);
+	}
+
+	// Cleanup
+	for (int i = 0; i < db.pr_count; i++)
+		delete db.prs[i];
+
+	for (int i = 0; i < db.ticket_count; i++)
+		delete db.tickets[i];
+
+	for (int i = 0; i < db.project_count; i++)
+		delete db.projects[i];
+
+	for (int i = 0; i < db.user_count; i++)
+		delete db.users[i];
 
 	return 0;
 }
