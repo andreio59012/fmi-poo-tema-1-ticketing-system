@@ -171,7 +171,7 @@ public:
 			description = description_;
 	}
 
-	const int getFileCount(const User* auth) const {
+	int getFileCount(const User* auth) const {
 		if (getUserPerm(auth) >= USER_PERM_VIEWER)
 			return file_count;
 		return 0;
