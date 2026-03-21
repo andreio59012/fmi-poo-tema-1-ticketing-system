@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cstring>
 #include <stdlib.h>
 #include "Project.h"
 #include "PullRequest.h"
@@ -171,7 +172,7 @@ void cli_await() {
 	int x; std::cout << "\nEnter any key to continue.\n"; std::cin >> x;
 }
 
-int cli_menu(const int option_count, const std::string options[])
+int cli_menu(const int option_count, const char* options[])
 {
 	std::cout << "Menus:\n";
 
@@ -196,7 +197,7 @@ void cli_home(Database* db, User*& auth)
 
 	if (auth == nullptr)
 	{
-		std::string options[] = { "Log in", "Sign up", "View Users", "View Projects", "Exit" };
+		const char* options[] = { "Log in", "Sign up", "View Users", "View Projects", "Exit" };
 		int op = cli_menu(5, options);
 
 		switch (op) {
@@ -208,7 +209,7 @@ void cli_home(Database* db, User*& auth)
 		}
 	}
 	else {
-		std::string options[] = {
+		const char* options[] = {
 			"View My Profile",
 			"View My Projects",
 			"View My Tickets",
@@ -242,7 +243,7 @@ void cli_user_view(Database* db, User*& auth, User* user) {
 	std::cout << "Viewing User...\nUsername: " << user->getUsername() << '\n';
 
 	if (auth == user) {
-		std::string options[] = { "Update User Details", "View User's Projects", "View User's Tickets", "View User's Pull Requests", "Log Out", "Home" };
+		const char* options[] = { "Update User Details", "View User's Projects", "View User's Tickets", "View User's Pull Requests", "Log Out", "Home" };
 		int op = cli_menu(6, options);
 
 		switch (op) {
@@ -255,7 +256,7 @@ void cli_user_view(Database* db, User*& auth, User* user) {
 		}
 	}
 	else {
-		std::string options[] = { "View User's Projects", "View User's Tickets", "View User's Pull Requests", "Force Log In", "Home" };
+		const char* options[] = { "View User's Projects", "View User's Tickets", "View User's Pull Requests", "Force Log In", "Home" };
 		int op = cli_menu(5, options);
 
 		switch (op) {
@@ -305,12 +306,12 @@ void cli_user_view_in_project(Database* db, User*& auth, const Project* project)
 void cli_user_update(Database* db, User*& auth, User* user) {
 	cli_clear();
 
-	std::cout << "Creating User...\nNew Username: ";
-	std::string username; std::cin >> username;
+	std::cout << "Updating User...\nNew Username: ";
+	char username[FIXED_STRING_SIZE]; std::cin >> username;
 	user->setUsername(auth, username);
 
 	std::cout << "New Password: ";
-	std::string password; std::cin >> password;
+	char password[FIXED_STRING_SIZE]; std::cin >> password;
 	user->setPassword(auth, password);
 
 	cli_home(db, auth);
@@ -320,12 +321,12 @@ void cli_user_login(Database* db, User*& auth) {
 	cli_clear();
 
 	std::cout << "Logging in...\nUsername: ";
-	std::string username; std::cin >> username;
+	char username[FIXED_STRING_SIZE]; std::cin >> username;
 
 	User* target = nullptr;
 
 	for (int i = 0; i < db->user_count; i++)
-		if (db->users[i]->getUsername() == username)
+		if (strncmp(db->users[i]->getUsername(), username, FIXED_STRING_SIZE) == 0)
 			target = db->users[i];
 
 	if (target == nullptr) {
@@ -336,7 +337,7 @@ void cli_user_login(Database* db, User*& auth) {
 	}
 
 	std::cout << "Password: ";
-	std::string password; std::cin >> password;
+	char password[FIXED_STRING_SIZE]; std::cin >> password;
 
 	if (!target->isPasswordCorrect(password)) {
 		std::cout << "\nIncorrect password!\n";
@@ -363,9 +364,9 @@ void cli_user_signup(Database* db, User*& auth) {
 	}
 
 	std::cout << "Signing up...\nUsername: ";
-	std::string username; std::cin >> username;
+	char username[FIXED_STRING_SIZE]; std::cin >> username;
 	std::cout << "Password: ";
-	std::string password; std::cin >> password;
+	char password[FIXED_STRING_SIZE]; std::cin >> password;
 
 	auth = new User(username, password);
 	db->users[db->user_count] = auth;
@@ -394,7 +395,7 @@ void cli_project_view(Database* db, User*& auth, Project* project) {
 		std::cout << project->getFiles(auth)[i].path << " : " << project->getFiles(auth)[i].content << "\n";
 
 	if (project->getUserPerm(auth) >= USER_PERM_OWNER && auth != nullptr) {
-		std::string options[] = {
+		const char* options[] = {
 			"Update Project Details",
 			"View Project's Users",
 			"Update Project's Users",
@@ -421,7 +422,7 @@ void cli_project_view(Database* db, User*& auth, Project* project) {
 		}
 	}
 	else if (project->getUserPerm(auth) >= USER_PERM_MAINTAINER && auth != nullptr) {
-		std::string options[] = {
+		const char* options[] = {
 			"View Project's Users",
 			"View Project's Tickets",
 			"View Project's Pull Requests",
@@ -442,7 +443,7 @@ void cli_project_view(Database* db, User*& auth, Project* project) {
 		}
 	}
 	else if (project->getUserPerm(auth) >= USER_PERM_VIEWER) {
-		std::string options[] = {
+		const char* options[] = {
 			"View Project's Users",
 			"View Project's Tickets",
 			"View Project's Pull Requests",
@@ -504,9 +505,9 @@ void cli_project_create(Database* db, User*& auth) {
 	}
 
 	std::cout << "Creating New Project...\nProject Title: ";
-	std::string title; std::cin >> title;
+	char title[FIXED_STRING_SIZE]; std::cin >> title;
 	std::cout << "Project Description: ";
-	std::string description; std::cin >> description;
+	char description[FIXED_STRING_SIZE]; std::cin >> description;
 
 	Project* p = new Project(title, description, USER_PERM_VIEWER);
 	p->setUserPerm(nullptr, auth, USER_PERM_OWNER);
@@ -524,11 +525,11 @@ void cli_project_update(Database* db, User*& auth, Project* project) {
 	cli_clear();
 
 	std::cout << "Modifying Project Details...\nTitle: ";
-	std::string title; std::cin >> title;
+	char title[FIXED_STRING_SIZE]; std::cin >> title;
 	project->setTitle(auth, title);
 
 	std::cout << "Description: ";
-	std::string description; std::cin >> description;
+	char description[FIXED_STRING_SIZE]; std::cin >> description;
 	project->setDescription(auth, description);
 
 	std::cout << "Project details updated.\n";
@@ -541,18 +542,18 @@ void cli_project_modify_users(Database* db, User*& auth, Project* project) {
 	cli_clear();
 
 	std::cout << "Modifying Project User Perms...\nUsername: ";
-	std::string username; std::cin >> username;
+	char username[FIXED_STRING_SIZE]; std::cin >> username;
 
 	User* user = nullptr;
 
 	for (int i = 0; i < db->user_count; i++) {
-		if (db->users[i]->getUsername() == username) {
+		if (strncmp(db->users[i]->getUsername(), username, FIXED_STRING_SIZE) == 0) {
 			user = db->users[i];
 			break;
 		}
 	}
 
-	std::cout << "Permissions: (NONE = 0, VIEW = 1, MAINTAIN = 2, REVIEW = 3, ADMINISTRATE = 4)";
+	std::cout << "Permissions: (NONE = 0, VIEW = 1, MAINTAIN = 2, REVIEW = 3, ADMINISTRATE = 4): #";
 	int user_perm; std::cin >> user_perm;
 
 	project->setUserPerm(auth, user, user_perm);
@@ -581,7 +582,7 @@ void cli_ticket_view(Database* db, User*& auth, Ticket* ticket) {
 	std::cout << "Viewing Ticket...\nTitle: " << ticket->getTitle(auth) << "\nDescription: " << ticket->getDescription(auth) << "\nClosed: " << (ticket->getClosed() ? "Yes" : "No") << "\n";
 
 	if (auth == ticket->getOwner()) {
-		std::string options[] = { "Update Ticket Details", "Update Ticket State", "View Ticket Owner", "View Ticket Project", "Home" };
+		const char* options[] = { "Update Ticket Details", "Update Ticket State", "View Ticket Owner", "View Ticket Project", "Home" };
 		int op = cli_menu(5, options);
 
 		switch (op) {
@@ -593,7 +594,7 @@ void cli_ticket_view(Database* db, User*& auth, Ticket* ticket) {
 		}
 	}
 	else if (auth != nullptr && ticket->getProject()->getUserPerm(auth) >= USER_PERM_REVIEWER) {
-		std::string options[] = { "Update Ticket State", "View Ticket Owner", "View Ticket Project", "Go Home" };
+		const char* options[] = { "Update Ticket State", "View Ticket Owner", "View Ticket Project", "Go Home" };
 		int op = cli_menu(4, options);
 
 		switch (op) {
@@ -604,7 +605,7 @@ void cli_ticket_view(Database* db, User*& auth, Ticket* ticket) {
 		}
 	}
 	else {
-		std::string options[] = { "View Ticket Owner", "View Ticket Project", "Home" };
+		const char* options[] = { "View Ticket Owner", "View Ticket Project", "Home" };
 		int op = cli_menu(3, options);
 
 		switch (op) {
@@ -668,9 +669,9 @@ void cli_ticket_create(Database* db, User*& auth, Project* project) {
 	}
 
 	std::cout << "Creating Ticket...\nTicket Title: ";
-	std::string title; std::cin >> title;
+	char title[FIXED_STRING_SIZE]; std::cin >> title;
 	std::cout << "Ticket Description: ";
-	std::string description; std::cin >> description;
+	char description[FIXED_STRING_SIZE]; std::cin >> description;
 
 	Ticket* t = new Ticket(auth, project, false, title, description);
 	db->tickets[db->ticket_count] = t;
@@ -686,11 +687,11 @@ void cli_ticket_update(Database* db, User*& auth, Ticket* ticket) {
 	cli_clear();
 
 	std::cout << "Updating Ticket Details...\nTitle: ";
-	std::string title; std::cin >> title;
+	char title[FIXED_STRING_SIZE]; std::cin >> title;
 	ticket->setTitle(auth, title);
 
 	std::cout << "Description: ";
-	std::string description; std::cin >> description;
+	char description[FIXED_STRING_SIZE]; std::cin >> description;
 	ticket->setDescription(auth, description);
 
 	std::cout << "Ticket details updated.\n";
@@ -725,13 +726,13 @@ void cli_pr_view(Database* db, User*& auth, PullRequest* pr) {
 	case 4: std::cout << "Blocked\n"; break;
 	}
 
-	std::cout << "Changed Files : \n";
+	std::cout << "Changed Files:\n";
 
 	for (int i = 0; i < pr->getChangedFileCount(auth); i++)
 		std::cout << pr->getChangedFiles(auth)[i].path << " : " << pr->getChangedFiles(auth)[i].content << "\n";
 
 	if (auth == pr->getOwner()) {
-		std::string options[] = { "Update PR Details", "Update PR State", "Update PR Files", "View PR Owner", "View PR Project", "Home" };
+		const char* options[] = { "Update PR Details", "Update PR State", "Update PR Files", "View PR Owner", "View PR Project", "Home" };
 		int op = cli_menu(6, options);
 
 		switch (op) {
@@ -744,7 +745,7 @@ void cli_pr_view(Database* db, User*& auth, PullRequest* pr) {
 		}
 	}
 	else if (auth != nullptr && pr->getProject()->getUserPerm(auth) >= USER_PERM_REVIEWER) {
-		std::string options[] = { "Update PR State", "View PR Owner", "View PR Project", "Go Home" };
+		const char* options[] = { "Update PR State", "View PR Owner", "View PR Project", "Go Home" };
 		int op = cli_menu(4, options);
 
 		switch (op) {
@@ -755,7 +756,7 @@ void cli_pr_view(Database* db, User*& auth, PullRequest* pr) {
 		}
 	}
 	else {
-		std::string options[] = { "View PR Owner", "View PR Project", "Home" };
+		const char* options[] = { "View PR Owner", "View PR Project", "Home" };
 		int op = cli_menu(3, options);
 
 		switch (op) {
@@ -819,9 +820,9 @@ void cli_pr_create(Database* db, User*& auth, Project* project) {
 	}
 
 	std::cout << "Creating PR...\nPR Title: ";
-	std::string title; std::cin >> title;
+	char title[FIXED_STRING_SIZE]; std::cin >> title;
 	std::cout << "PR Description: ";
-	std::string description; std::cin >> description;
+	char description[FIXED_STRING_SIZE]; std::cin >> description;
 
 	PullRequest* pr = new PullRequest(auth, project, title, description);
 	db->prs[db->pr_count] = pr;
@@ -837,11 +838,11 @@ void cli_pr_update(Database* db, User*& auth, PullRequest* pr) {
 	cli_clear();
 
 	std::cout << "Updating PR Details...\nTitle: ";
-	std::string title; std::cin >> title;
+	char title[FIXED_STRING_SIZE]; std::cin >> title;
 	pr->setTitle(auth, title);
 
 	std::cout << "Description: ";
-	std::string description; std::cin >> description;
+	char description[FIXED_STRING_SIZE]; std::cin >> description;
 	pr->setDescription(auth, description);
 
 	std::cout << "Pull Request details updated.\n";
@@ -864,11 +865,13 @@ void cli_pr_state_update(Database* db, User*& auth, PullRequest* pr) {
 	int state; std::cin >> state;
 
 	std::cout << "Review Comment: ";
-	std::string review_comment; std::getline(std::cin, review_comment);
+	char review_comment[FIXED_STRING_SIZE];
+	std::cin.ignore();
+	std::cin.getline(review_comment, FIXED_STRING_SIZE);
 
 	pr->setState(auth, state, review_comment);
 
-	std::cout << "Ticket state updated.\n";
+	std::cout << "PR state updated.\n";
 
 	cli_await();
 	cli_home(db, auth);
@@ -878,12 +881,12 @@ void cli_pr_file_update(Database* db, User*& auth, PullRequest* pr) {
 	cli_clear();
 
 	std::cout << "Updating PR File...\nFile Name: ";
-	std::string file_name; std::cin >> file_name;
+	char file_name[FIXED_STRING_SIZE]; std::cin >> file_name;
 	std::cout << "File Content: ";
-	std::string file_content; std::cin >> file_content;
+	char file_content[FIXED_STRING_SIZE]; std::cin >> file_content;
 
 	pr->setChangedFileContent(auth, file_name, file_content);
-	std::cout << "Pull Request details updated.\n";
+	std::cout << "Pull Request file updated.\n";
 
 	cli_await();
 	cli_home(db, auth);

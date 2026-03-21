@@ -1,5 +1,6 @@
 #pragma once
 
-const int FIXED_ARRAY_SIZE = 100;	// not allowed to use STL data structures (maps, vectors, arrays) so doing a slightly lazy replacement
+const int FIXED_ARRAY_SIZE = 100;
+const int FIXED_STRING_SIZE = 256;
 const bool LOG_CONSTRUCTORS = false;
-const std::string STRING_PRIVATE = "(PRIVATE)";
+const char STRING_PRIVATE[] = "(PRIVATE)";

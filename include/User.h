@@ -1,79 +1,80 @@
 #pragma once
 #include <iostream>
+#include <cstring>
 #include "Constants.h"
 
 class User
 {
 private:
-	std::string username, password;
+    char username[FIXED_STRING_SIZE];
+    char password[FIXED_STRING_SIZE];
 
 public:
-	// Constructor
-	explicit User(
-		const std::string& username_ = "",
-		const std::string& password_ = ""
-	) :
-		username(username_),
-		password(password_)
-	{
-		if (LOG_CONSTRUCTORS)
-			std::cout << "'User': Constructor with parameters for username '" << username << "'.\n";
-	}
+    explicit User(
+        const char* username_ = "",
+        const char* password_ = ""
+    ) {
+        strncpy(username, username_, FIXED_STRING_SIZE - 1);
+        username[FIXED_STRING_SIZE - 1] = '\0';
+        strncpy(password, password_, FIXED_STRING_SIZE - 1);
+        password[FIXED_STRING_SIZE - 1] = '\0';
 
-	// Move Constructor
-	User(User&& other) noexcept :
-		username(std::move(other.username)),
-		password(std::move(other.password))
-	{
-		if (LOG_CONSTRUCTORS)
-			std::cout << "'User': Move Constructor for username '" << username << "'.\n";
-	}
+        if (LOG_CONSTRUCTORS)
+            std::cout << "'User': Constructor with parameters for username '" << username << "'.\n";
+    }
 
-	// Copy Constructor
-	User(const User& other) :
-		username(other.username),
-		password(other.password)
-	{
-		if (LOG_CONSTRUCTORS)
-			std::cout << "'User': Copy Constructor for username '" << username << "'.\n";
-	}
+    User(User&& other) noexcept {
+        strncpy(username, other.username, FIXED_STRING_SIZE);
+        strncpy(password, other.password, FIXED_STRING_SIZE);
 
-	// Copy Operator
-	User& operator=(const User& other) {
-		username = other.username;
-		password = other.password;
+        if (LOG_CONSTRUCTORS)
+            std::cout << "'User': Move Constructor for username '" << username << "'.\n";
+    }
 
-		if (LOG_CONSTRUCTORS)
-			std::cout << "'User': Copy Operator for username '" << username << "'.\n";
-		return *this;
-	}
+    User(const User& other) {
+        strncpy(username, other.username, FIXED_STRING_SIZE);
+        strncpy(password, other.password, FIXED_STRING_SIZE);
 
-	// OStream Operator (#TODO)
-	friend std::ostream& operator<<(std::ostream& os, const User& p) {
-		os << "User:\n\tUsername: " << p.username << "\n\tPassword: " << p.password << "\n";
-		return os;
-	}
+        if (LOG_CONSTRUCTORS)
+            std::cout << "'User': Copy Constructor for username '" << username << "'.\n";
+    }
 
-	// Destructor
-	~User() {
-		if (LOG_CONSTRUCTORS)
-			std::cout << "'User': Destructor for username '" << username << "'.\n";
-	}
+    User& operator=(const User& other) {
+        strncpy(username, other.username, FIXED_STRING_SIZE);
+        strncpy(password, other.password, FIXED_STRING_SIZE);
 
-	// Getters & Setters
-	const std::string& getUsername () const { return username; }
+        if (LOG_CONSTRUCTORS)
+            std::cout << "'User': Copy Operator for username '" << username << "'.\n";
+        return *this;
+    }
 
-	bool isPasswordCorrect(const std::string& password_) const {
-		return password == password_;
-	}
+    friend std::ostream& operator<<(std::ostream& os, const User& p) {
+        os << "User:\n\tUsername: " << p.username << "\n\tPassword: " << p.password << "\n";
+        return os;
+    }
 
-	void setUsername(const User* auth, const std::string& username_) {
-		if(auth == this)
-			username = username_;
-	}
+    ~User() {
+        if (LOG_CONSTRUCTORS)
+            std::cout << "'User': Destructor for username '" << username << "'.\n";
+    }
 
-	void setPassword(const User* auth, const std::string& password_) {
-		if (auth == this)
-			password = password_;
-	}
+    const char* getUsername() const { return username; }
+
+    bool isPasswordCorrect(const char* password_) const {
+        return strncmp(password, password_, FIXED_STRING_SIZE) == 0;
+    }
+
+    void setUsername(const User* auth, const char* username_) {
+        if (auth == this) {
+            strncpy(username, username_, FIXED_STRING_SIZE - 1);
+            username[FIXED_STRING_SIZE - 1] = '\0';
+        }
+    }
+
+    void setPassword(const User* auth, const char* password_) {
+        if (auth == this) {
+            strncpy(password, password_, FIXED_STRING_SIZE - 1);
+            password[FIXED_STRING_SIZE - 1] = '\0';
+        }
+    }
 };

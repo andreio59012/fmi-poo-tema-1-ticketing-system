@@ -1,6 +1,6 @@
 #pragma once
-#include <string>
 #include <iostream>
+#include <cstring>
 #include "Project.h"
 #include "Ticket.h"
 #include "Constants.h"
@@ -14,168 +14,173 @@ const int PR_STATE_BLOCKED = 4;
 class PullRequest
 {
 private:
-	User* owner;
-	Project* project;
-	int state;
-	std::string title, description, review_comment;
-	int changed_file_count = 0;
-	File changed_files[FIXED_ARRAY_SIZE];
+    User* owner;
+    Project* project;
+    int state;
+    char title[FIXED_STRING_SIZE];
+    char description[FIXED_STRING_SIZE];
+    char review_comment[FIXED_STRING_SIZE];
+    int changed_file_count = 0;
+    File changed_files[FIXED_ARRAY_SIZE];
 
 public:
-	// Constructor
-	explicit PullRequest(
-		User* owner_ = nullptr,
-		Project* project_ = nullptr,
-		const std::string& title_ = "",
-		const std::string& description_ = ""
-	) :
-		owner(owner_),
-		project(project_),
-		state(PR_STATE_DRAFT),
-		title(title_),
-		description(description_),
-		review_comment(""),
-		changed_file_count(0),
-		changed_files()
-	{
-		if (LOG_CONSTRUCTORS)
-			std::cout << "'PullRequest': Constructor with parameters.\n";
-	}
+    explicit PullRequest(
+        User* owner_ = nullptr,
+        Project* project_ = nullptr,
+        const char* title_ = "",
+        const char* description_ = ""
+    ) :
+        owner(owner_),
+        project(project_),
+        state(PR_STATE_DRAFT),
+        changed_file_count(0),
+        changed_files()
+    {
+        strncpy(title, title_, FIXED_STRING_SIZE - 1);
+        title[FIXED_STRING_SIZE - 1] = '\0';
+        strncpy(description, description_, FIXED_STRING_SIZE - 1);
+        description[FIXED_STRING_SIZE - 1] = '\0';
+        review_comment[0] = '\0';
 
-	// Copy Constructor
-	PullRequest(const PullRequest& other) :
-		owner(other.owner),
-		project(other.project),
-		state(other.state),
-		title(other.title),
-		description(other.description),
-		review_comment(other.review_comment),
-		changed_file_count(other.changed_file_count)
-	{
-		for (int i = 0; i < other.changed_file_count; i++)
-			changed_files[i] = other.changed_files[i];
+        if (LOG_CONSTRUCTORS)
+            std::cout << "'PullRequest': Constructor with parameters.\n";
+    }
 
-		if (LOG_CONSTRUCTORS)
-			std::cout << "'PullRequest': Copy Constructor.\n";
-	}
+    PullRequest(const PullRequest& other) :
+        owner(other.owner),
+        project(other.project),
+        state(other.state),
+        changed_file_count(other.changed_file_count)
+    {
+        strncpy(title, other.title, FIXED_STRING_SIZE);
+        strncpy(description, other.description, FIXED_STRING_SIZE);
+        strncpy(review_comment, other.review_comment, FIXED_STRING_SIZE);
 
-	// Copy Operator
-	PullRequest& operator=(const PullRequest& other) {
-		owner = other.owner;
-		project = other.project;
-		state = other.state;
-		title = other.title;
-		description = other.description;
-		review_comment = other.review_comment;
-		changed_file_count = other.changed_file_count;
+        for (int i = 0; i < other.changed_file_count; i++)
+            changed_files[i] = other.changed_files[i];
 
-		for (int i = 0; i < other.changed_file_count; i++)
-			changed_files[i] = other.changed_files[i];
+        if (LOG_CONSTRUCTORS)
+            std::cout << "'PullRequest': Copy Constructor.\n";
+    }
 
-		if (LOG_CONSTRUCTORS)
-			std::cout << "'PullRequest': Copy Operator.\n";
+    PullRequest& operator=(const PullRequest& other) {
+        owner = other.owner;
+        project = other.project;
+        state = other.state;
+        changed_file_count = other.changed_file_count;
+        strncpy(title, other.title, FIXED_STRING_SIZE);
+        strncpy(description, other.description, FIXED_STRING_SIZE);
+        strncpy(review_comment, other.review_comment, FIXED_STRING_SIZE);
 
-		return *this;
-	}
+        for (int i = 0; i < other.changed_file_count; i++)
+            changed_files[i] = other.changed_files[i];
 
-	// OStream Operator (#TODO)
-	friend std::ostream& operator<<(std::ostream& os, const PullRequest& p) {
-		os << "Pull Request:\n\tTitle: " << p.title << "\n\tDescription: " << p.description << "\n\tOwner: " << p.owner->getUsername() << "\n\tState: " << p.state << "\n\tReview Comment: " << p.review_comment << "\n";
+        if (LOG_CONSTRUCTORS)
+            std::cout << "'PullRequest': Copy Operator.\n";
+        return *this;
+    }
 
-		if (p.changed_file_count > 0) {
-			os << "\tFiles: ";
-			for (int i = 0; i < p.changed_file_count; i++)
-				os << p.changed_files[i].path << ": " << p.changed_files[i].content << "; ";
-			os << '\n';
-		}
+    friend std::ostream& operator<<(std::ostream& os, const PullRequest& p) {
+        os << "Pull Request:\n\tTitle: " << p.title << "\n\tDescription: " << p.description << "\n\tOwner: " << p.owner->getUsername() << "\n\tState: " << p.state << "\n\tReview Comment: " << p.review_comment << "\n";
 
-		return os;
-	}
+        if (p.changed_file_count > 0) {
+            os << "\tFiles: ";
+            for (int i = 0; i < p.changed_file_count; i++)
+                os << p.changed_files[i].path << ": " << p.changed_files[i].content << "; ";
+            os << '\n';
+        }
 
-	// Destructor
-	~PullRequest() {
-		if (LOG_CONSTRUCTORS)
-			std::cout << "'PullRequest': Destructor.\n";
-	}
+        return os;
+    }
 
-	// Getters & Setters
-	User* getOwner() const { return owner; }
-	Project* getProject() const { return project; }
+    ~PullRequest() {
+        if (LOG_CONSTRUCTORS)
+            std::cout << "'PullRequest': Destructor.\n";
+    }
 
-	const std::string& getTitle(const User* auth) const {
-		if (project->getUserPerm(auth) >= USER_PERM_VIEWER)
-			return title;
-		return STRING_PRIVATE;
-	}
+    User* getOwner() const { return owner; }
+    Project* getProject() const { return project; }
 
-	void setTitle(const User* auth, const std::string& title_) {
-		if (auth == owner)
-			title = title_;
-	}
+    const char* getTitle(const User* auth) const {
+        if (project->getUserPerm(auth) >= USER_PERM_VIEWER)
+            return title;
+        return STRING_PRIVATE;
+    }
 
-	const std::string& getDescription(const User* auth) const {
-		if (project->getUserPerm(auth) >= USER_PERM_VIEWER)
-			return title;
-		return STRING_PRIVATE;
-	}
+    void setTitle(const User* auth, const char* title_) {
+        if (auth == owner) {
+            strncpy(title, title_, FIXED_STRING_SIZE - 1);
+            title[FIXED_STRING_SIZE - 1] = '\0';
+        }
+    }
 
-	void setDescription(const User* auth, const std::string& description_) {
-		if (auth == owner)
-			description = description_;
-	}
+    const char* getDescription(const User* auth) const {
+        if (project->getUserPerm(auth) >= USER_PERM_VIEWER)
+            return description;
+        return STRING_PRIVATE;
+    }
 
-	int getState() const { return state; }
+    void setDescription(const User* auth, const char* description_) {
+        if (auth == owner) {
+            strncpy(description, description_, FIXED_STRING_SIZE - 1);
+            description[FIXED_STRING_SIZE - 1] = '\0';
+        }
+    }
 
-	void setState(const User* auth, const int state_, const std::string& review_comment_ = "")
-	{
-		if (state == PR_STATE_MERGED)
-			return;
+    int getState() const { return state; }
 
-		if (
-			(
-				project->getUserPerm(auth) >= USER_PERM_REVIEWER &&
-				(state_ == PR_STATE_NEEDS_CHANGES || state_ == PR_STATE_MERGED || state_ == PR_STATE_BLOCKED)
-			) || (
-				auth == owner &&
-				(state_ == PR_STATE_DRAFT || state_ == PR_STATE_AWAITING_REVIEW)
-			)
-		) {
-			state = state_;
-			review_comment = review_comment_;
+    void setState(const User* auth, const int state_, const char* review_comment_ = "") {
+        if (state == PR_STATE_MERGED)
+            return;
 
-			if (state == PR_STATE_MERGED)
-				for (int i = 0; i < changed_file_count; i++)
-					project->setFileContent(auth, changed_files[i].path, changed_files[i].content);
-		}
-	}
+        if (
+            (
+                project->getUserPerm(auth) >= USER_PERM_REVIEWER &&
+                (state_ == PR_STATE_NEEDS_CHANGES || state_ == PR_STATE_MERGED || state_ == PR_STATE_BLOCKED)
+                ) || (
+                    auth == owner &&
+                    (state_ == PR_STATE_DRAFT || state_ == PR_STATE_AWAITING_REVIEW)
+                    )
+            ) {
+            state = state_;
+            strncpy(review_comment, review_comment_, FIXED_STRING_SIZE - 1);
+            review_comment[FIXED_STRING_SIZE - 1] = '\0';
 
-	int getChangedFileCount(const User* auth) const {
-		if (project->getUserPerm(auth) >= USER_PERM_VIEWER)
-			return changed_file_count;
-		return 0;
-	}
+            if (state == PR_STATE_MERGED)
+                for (int i = 0; i < changed_file_count; i++)
+                    project->setFileContent(auth, changed_files[i].path, changed_files[i].content);
+        }
+    }
 
-	const File* getChangedFiles(const User* auth) const
-	{
-		if (project->getUserPerm(auth) >= USER_PERM_VIEWER)
-			return changed_files;
-		return {};
-	}
+    int getChangedFileCount(const User* auth) const {
+        if (project->getUserPerm(auth) >= USER_PERM_VIEWER)
+            return changed_file_count;
+        return 0;
+    }
 
-	void setChangedFileContent(const User* auth, const std::string& file_path, const std::string& file_content) {
-		if (auth != owner)
-			return;
+    const File* getChangedFiles(const User* auth) const {
+        if (project->getUserPerm(auth) >= USER_PERM_VIEWER)
+            return changed_files;
+        return nullptr;
+    }
 
-		for (int i = 0; i < changed_file_count; i++)
-			if (changed_files[i].path == file_path) {
-				changed_files[i].content = file_content;
-				return;
-			}
+    void setChangedFileContent(const User* auth, const char* file_path, const char* file_content) {
+        if (auth != owner)
+            return;
 
-		if (changed_file_count < FIXED_ARRAY_SIZE - 1) {
-			changed_files[changed_file_count].path = file_path;
-			changed_files[changed_file_count].content = file_content;
-			changed_file_count += 1;
-		}
-	}
+        for (int i = 0; i < changed_file_count; i++)
+            if (strncmp(changed_files[i].path, file_path, FIXED_STRING_SIZE) == 0) {
+                strncpy(changed_files[i].content, file_content, FIXED_STRING_SIZE - 1);
+                changed_files[i].content[FIXED_STRING_SIZE - 1] = '\0';
+                return;
+            }
+
+        if (changed_file_count < FIXED_ARRAY_SIZE - 1) {
+            strncpy(changed_files[changed_file_count].path, file_path, FIXED_STRING_SIZE - 1);
+            changed_files[changed_file_count].path[FIXED_STRING_SIZE - 1] = '\0';
+            strncpy(changed_files[changed_file_count].content, file_content, FIXED_STRING_SIZE - 1);
+            changed_files[changed_file_count].content[FIXED_STRING_SIZE - 1] = '\0';
+            changed_file_count++;
+        }
+    }
 };
