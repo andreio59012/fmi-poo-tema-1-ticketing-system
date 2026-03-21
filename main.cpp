@@ -16,7 +16,7 @@ std::vector<PullRequest*> db_prs;
 void cli_home();
 
 void cli_user_view(User*);
-void cli_user_view_vector(std::vector<User*>);
+void cli_user_view_vector(const std::vector<User*>);
 void cli_user_view_in_project(const Project*);
 void cli_user_update(User*);
 void cli_user_login();
@@ -24,7 +24,7 @@ void cli_user_signup();
 void cli_user_logout();
 
 void cli_project_view(Project*);
-void cli_project_view_vector(std::vector<Project*>);
+void cli_project_view_vector(const std::vector<Project*>);
 void cli_project_view_in_user(const User*);
 void cli_project_create();
 void cli_project_update(Project*);
@@ -32,7 +32,7 @@ void cli_project_modify_users(Project*);
 void cli_project_modify_user_default(Project*);
 
 void cli_ticket_view(Ticket*);
-void cli_ticket_view_vector(std::vector<Ticket*>);
+void cli_ticket_view_vector(const std::vector<Ticket*>);
 void cli_ticket_view_in_user(const User*);
 void cli_ticket_view_in_project(const Project*);
 void cli_ticket_create(Project*);
@@ -40,7 +40,7 @@ void cli_ticket_update(Ticket*);
 void cli_ticket_closed_update(Ticket* ticket);
 
 void cli_pr_view(PullRequest*);
-void cli_pr_view_vector(std::vector<PullRequest*>);
+void cli_pr_view_vector(const std::vector<PullRequest*>);
 void cli_pr_view_in_user(const User*);
 void cli_pr_view_in_project(const Project*);
 void cli_pr_create(Project*);
@@ -58,7 +58,7 @@ int main()
 	db_users.push_back(new User("Andrew Knox", "CM%T_u&90q!A+Ojg*jA"));		// student guide platform manager
 	db_users.push_back(new User("Jerry Smith", "asdfggggg"));				// student guide platform programmer
 
-	for (User* u : db_users)
+	for (const User* u : db_users)
 		std::cout << *u;
 
 	// Generate Projects
@@ -76,7 +76,7 @@ int main()
 		{ {db_users[3], USER_PERM_OWNER}, {db_users[4], USER_PERM_REVIEWER} }
 	));
 
-	for (Project* p : db_projects)
+	for (const Project* p : db_projects)
 		std::cout << *p;
 
 	// Generate Tickets
@@ -110,7 +110,7 @@ int main()
 		"I'm gonna have to fix this soon, it hurts to look at."
 	));
 
-	for (Ticket* t : db_tickets)
+	for (const Ticket* t : db_tickets)
 		std::cout << *t;
 
 	// Generate Pull Requests
@@ -139,7 +139,7 @@ int main()
 		{ { "settings.cfg", "dark_mode = false"}, {"home.html", "if (dark_mode)\n\tmake_dark();"} }
 	));
 
-	for (PullRequest* pr : db_prs)
+	for (const PullRequest* pr : db_prs)
 		std::cout << *pr;
 
 	// Review Pull Requests
@@ -156,7 +156,7 @@ int main()
 	db_prs[2]->setState(db_users[2], PR_STATE_MERGED, "Nice, that was fast!");
 	db_tickets[3]->setClosed(db_users[2], true);
 
-	for (PullRequest* pr : db_prs)
+	for (const PullRequest* pr : db_prs)
 		std::cout << *pr;
 
 	// Finish
@@ -182,7 +182,7 @@ void cli_await() {
 	int x; std::cout << "\nEnter any key to continue.\n"; std::cin >> x;
 }
 
-int cli_menu(std::vector<std::string> options)
+int cli_menu(const std::vector<std::string> options)
 {
 	std::cout << "Menus:\n";
 
@@ -280,7 +280,7 @@ void cli_user_view(User* user) {
 	}
 }
 
-void cli_user_view_vector(std::vector<User*> users) {
+void cli_user_view_vector(const std::vector<User*> users) {
 	cli_clear();
 	std::cout << "Users:\n";
 
@@ -296,7 +296,7 @@ void cli_user_view_vector(std::vector<User*> users) {
 		cli_home();
 }
 
-void cli_user_view_in_project(Project* project) {
+void cli_user_view_in_project(const Project* project) {
 	std::vector<User*> users = {};
 	for (int i = 0; i < int(db_users.size()); i++)
 		if (project->getUserPerm(db_users[i]) != project->getDefaultUserPerm())
@@ -454,7 +454,7 @@ void cli_project_view(Project* project) {
 	}
 }
 
-void cli_project_view_vector(std::vector<Project*> projects) {
+void cli_project_view_vector(const std::vector<Project*> projects) {
 	cli_clear();
 	std::cout << "Projects:\n";
 
@@ -588,7 +588,7 @@ void cli_ticket_view(Ticket* ticket) {
 	}
 }
 
-void cli_ticket_view_vector(std::vector<Ticket*> tickets) {
+void cli_ticket_view_vector(const std::vector<Ticket*> tickets) {
 	cli_clear();
 	std::cout << "Tickets:\n";
 
@@ -721,7 +721,7 @@ void cli_pr_view(PullRequest* pr) {
 	}
 }
 
-void cli_pr_view_vector(std::vector<PullRequest*> prs) {
+void cli_pr_view_vector(const std::vector<PullRequest*> prs) {
 	cli_clear();
 	std::cout << "Pull Requests:\n";
 

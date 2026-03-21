@@ -20,21 +20,8 @@ private:
 	std::map<std::string, std::string> files;
 
 public:
-	/// Constructors
-	// Constructor without parameters
-	Project() :  
-		title(""), 
-		description(""),
-		default_user_perm(USER_PERM_NONE),
-		user_perms({}), 
-		files({})
-	{
-		if (LOG_CONSTRUCTORS)
-			std::cout << "'Project': Constructor without parameters.\n";
-	}
-	
-	// Constructor with parameters
-	Project(
+	// Constructor
+	explicit Project(
 		const std::string& title_ = "", 
 		const std::string& description_ = "",
 		const int default_user_perm_ = USER_PERM_NONE,
@@ -88,7 +75,7 @@ public:
 
 		if (p.user_perms.size() > 0) {
 			std::cout << "\tUsers: ";
-			for (auto& pair : p.user_perms) {
+			for (const auto& pair : p.user_perms) {
 				os << pair.first->getUsername() << " (" << pair.second << "), ";
 			}
 			std::cout << '\n';
@@ -96,7 +83,7 @@ public:
 
 		if (p.files.size() > 0) {
 			std::cout << "\tFiles: ";
-			for (auto& pair : p.files) {
+			for (const auto& pair : p.files) {
 				os << pair.first << ": " << pair.second << "; ";
 			}
 			std::cout << '\n';
@@ -113,7 +100,7 @@ public:
 		return a->second;
 	}
 
-	void setUserPerm(User* auth, User* user, const int user_perm) {
+	void setUserPerm(const User* auth, User* user, const int user_perm) {
 		if (getUserPerm(auth) >= USER_PERM_OWNER)
 			user_perms[user] = user_perm;
 	}

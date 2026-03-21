@@ -12,28 +12,16 @@ private:
 	std::string title, description;
 
 public:
-	// Constructor without parameters
-	Ticket() :
-		owner(nullptr),
-		project(nullptr),
-		closed(false),
-		title(""),
-		description("")
-	{
-		if (LOG_CONSTRUCTORS)
-			std::cout << "'Ticket': Constructor without parameters.\n";
-	}
-
-	// Constructor with parameters
-	Ticket(
+	// Constructor
+	explicit Ticket(
 		User* owner_ = nullptr,
 		Project* project_ = nullptr,
 		const bool closed_ = false,
 		const std::string& title_ = "",
 		const std::string& description_ = ""
 	) :
-		project(project_),
 		owner(owner_),
+		project(project_),
 		closed(closed_),
 		title(title_),
 		description(description_)

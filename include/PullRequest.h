@@ -16,30 +16,15 @@ const int PR_STATE_BLOCKED = 4;
 class PullRequest
 {
 private:
-	Project* project;
 	User* owner;
+	Project* project;
 	int state;
-
 	std::string title, description, review_comment;
 	std::map<const std::string, std::string> changed_files;
 
 public:
-	// Constructor without parameters
-	PullRequest() :
-		owner(nullptr),
-		project(nullptr),
-		state(0),
-		title(""),
-		description(""),
-		review_comment(""),
-		changed_files({})
-	{
-		if (LOG_CONSTRUCTORS)
-			std::cout << "'PullRequest': Constructor without parameters.\n";
-	}
-
-	// Constructor with parameters
-	PullRequest(
+	// Constructor
+	explicit PullRequest(
 		User* owner_ = nullptr,
 		Project* project_ = nullptr,
 		const std::string& title_ = "",
@@ -94,7 +79,7 @@ public:
 
 		if (p.changed_files.size() > 0) {
 			std::cout << "\tFiles: ";
-			for (auto& pair : p.changed_files) {
+			for (const auto& pair : p.changed_files) {
 				os << pair.first << ": " << pair.second << "; ";
 			}
 			std::cout << '\n';
@@ -135,7 +120,7 @@ public:
 			description = description_;
 	}
 
-	const bool getState() const { return state; }
+	int getState() const { return state; }
 
 	void setState(const User* auth, const int state_, const std::string& review_comment_ = "")
 	{

@@ -10,17 +10,8 @@ private:
 	std::string username, password;
 
 public:
-	// Constructor without parameters
-	User() :
-		username(""),
-		password("")
-	{
-		if (LOG_CONSTRUCTORS)
-			std::cout << "'User': Constructor without parameters.\n";
-	}
-
-	// Constructor with parameters
-	User(
+	// Constructor
+	explicit User(
 		const std::string& username_ = "",
 		const std::string& password_ = ""
 	) :
@@ -72,18 +63,18 @@ public:
 	}
 
 	// Getters & Setters
-	std::string getUsername () const { return username; }
+	const std::string getUsername () const { return username; }
 
 	bool isPasswordCorrect(const std::string& password_) const {
 		return password == password_;
 	}
 
-	void setUsername(User* auth, const std::string& username_) {
+	void setUsername(const User* auth, const std::string& username_) {
 		if(auth == this)
 			username = username_;
 	}
 
-	void setPassword(User* auth, const std::string& password_) {
+	void setPassword(const User* auth, const std::string& password_) {
 		if (auth == this)
 			password = password_;
 	}
