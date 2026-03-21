@@ -1,6 +1,4 @@
 #pragma once
-#include <map>
-#include <string>
 #include <iostream>
 #include "Constants.h"
 
@@ -63,7 +61,7 @@ public:
 	}
 
 	// Getters & Setters
-	const std::string getUsername () const { return username; }
+	const std::string& getUsername () const { return username; }
 
 	bool isPasswordCorrect(const std::string& password_) const {
 		return password == password_;

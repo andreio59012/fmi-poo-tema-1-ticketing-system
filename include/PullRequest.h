@@ -1,6 +1,4 @@
 #pragma once
-#include <map>
-#include <set>
 #include <string>
 #include <iostream>
 #include "Project.h"
@@ -20,7 +18,8 @@ private:
 	Project* project;
 	int state;
 	std::string title, description, review_comment;
-	std::map<const std::string, std::string> changed_files;
+	int changed_file_count = 0;
+	File changed_files[FIXED_ARRAY_SIZE];
 
 public:
 	// Constructor
@@ -28,8 +27,7 @@ public:
 		User* owner_ = nullptr,
 		Project* project_ = nullptr,
 		const std::string& title_ = "",
-		const std::string& description_ = "",
-		const std::map<const std::string, std::string>& changed_files_ = {}
+		const std::string& description_ = ""
 	) :
 		owner(owner_),
 		project(project_),
@@ -37,7 +35,8 @@ public:
 		title(title_),
 		description(description_),
 		review_comment(""),
-		changed_files(changed_files_)
+		changed_file_count(0),
+		changed_files()
 	{
 		if (LOG_CONSTRUCTORS)
 			std::cout << "'PullRequest': Constructor with parameters.\n";
@@ -51,8 +50,11 @@ public:
 		title(other.title),
 		description(other.description),
 		review_comment(other.review_comment),
-		changed_files(other.changed_files)
+		changed_file_count(other.changed_file_count)
 	{
+		for (int i = 0; i < other.changed_file_count; i++)
+			changed_files[i] = other.changed_files[i];
+
 		if (LOG_CONSTRUCTORS)
 			std::cout << "'PullRequest': Copy Constructor.\n";
 	}
@@ -65,7 +67,10 @@ public:
 		title = other.title;
 		description = other.description;
 		review_comment = other.review_comment;
-		changed_files = other.changed_files;
+		changed_file_count = other.changed_file_count;
+
+		for (int i = 0; i < other.changed_file_count; i++)
+			changed_files[i] = other.changed_files[i];
 
 		if (LOG_CONSTRUCTORS)
 			std::cout << "'PullRequest': Copy Operator.\n";
@@ -77,12 +82,11 @@ public:
 	friend std::ostream& operator<<(std::ostream& os, const PullRequest& p) {
 		os << "Pull Request:\n\tTitle: " << p.title << "\n\tDescription: " << p.description << "\n\tOwner: " << p.owner->getUsername() << "\n\tState: " << p.state << "\n\tReview Comment: " << p.review_comment << "\n";
 
-		if (p.changed_files.size() > 0) {
-			std::cout << "\tFiles: ";
-			for (const auto& pair : p.changed_files) {
-				os << pair.first << ": " << pair.second << "; ";
-			}
-			std::cout << '\n';
+		if (p.changed_file_count > 0) {
+			os << "\tFiles: ";
+			for (int i = 0; i < p.changed_file_count; i++)
+				os << p.changed_files[i].path << ": " << p.changed_files[i].content << "; ";
+			os << '\n';
 		}
 
 		return os;
@@ -140,20 +144,38 @@ public:
 			review_comment = review_comment_;
 
 			if (state == PR_STATE_MERGED)
-				for (auto const& pair : changed_files)
-					project->setFileContent(auth, pair.first, pair.second);
+				for (int i = 0; i < changed_file_count; i++)
+					project->setFileContent(auth, changed_files[i].path, changed_files[i].content);
 		}
 	}
 
-	const std::map<const std::string, std::string> getChangedFiles(const User* auth) const
+	int getChangedFileCount(const User* auth) const {
+		if (project->getUserPerm(auth) >= USER_PERM_VIEWER)
+			return changed_file_count;
+		return 0;
+	}
+
+	const File* getChangedFiles(const User* auth) const
 	{
 		if (project->getUserPerm(auth) >= USER_PERM_VIEWER)
 			return changed_files;
 		return {};
 	}
 
-	void setChangedFileContent(const User* auth, const std::string& file_name, const std::string& file_content) {
-		if (auth == owner)
-			changed_files[file_name] = file_content;
+	void setChangedFileContent(const User* auth, const std::string& file_path, const std::string& file_content) {
+		if (auth != owner)
+			return;
+
+		for (int i = 0; i < changed_file_count; i++)
+			if (changed_files[i].path == file_path) {
+				changed_files[i].content = file_content;
+				return;
+			}
+
+		if (changed_file_count < FIXED_ARRAY_SIZE - 1) {
+			changed_files[changed_file_count].path = file_path;
+			changed_files[changed_file_count].content = file_content;
+			changed_file_count += 1;
+		}
 	}
 };
