@@ -1,3 +1,30 @@
+/*
+Programul simuleaza o platforma de gestionare a aplicatiilor software, similara cu GitHub/GitLab.
+Utilizatorii pot sa creeze si sa modifice proiecte, care au fisiere, un sistem de permisiuni,
+**tickete** pentru raportarea problemelor, si pull-requesti pentru propuneri de modificari.
+Date de exemplu sunt generate la inceputul rularii programului, iar alte date in plus pot fi introduse de utilizator.
+
+Date de intrare:
+- Utilizatori: nume de utilizator si parola
+- Proiecte: titlu, descriere, permisiune pentru utilizatori noi, fisiere
+- Tickete: titlu, descriere, proiectul si utilizatorul care l-a creat, starea (deschis/inchis)
+- Pull Request-uri: titlu, descriere, fisierele modificate (cale + continut),
+	starea (draft, asteapta review, trebuie modificat, merged, blocat)
+- Permisiuni per utilizator per proiect: NONE(0), VIEWER(1), MAINTAINER(2),
+	REVIEWER(3), OWNER(4)
+
+Operatii posibile:
+- Utilizatori: creare cont, autentificare, modificare date personale
+- Proiecte: creare, modificare titlu/descriere, gestionare permisiuni utilizatori,
+	setare permisiune implicita
+- Tickete: creare (minim MAINTAINER), modificare (doar owner-ul ticketului),
+	inchidere/deschidere (owner sau minim REVIEWER)
+- Pull Request-uri: creare (minim MAINTAINER), modificare titlu/descriere/fisiere
+	(doar owner-ul PR-ului), schimbare stare (owner-ul poate pune DRAFT sau AWAITING REVIEW,
+	un REVIEWER poate pune NEEDS CHANGES, MERGED sau BLOCKED; la MERGED fisierele schimbate 
+	in PR sunt schimbate si in proiect)
+*/
+
 #include <iostream>
 #include <cstring>
 #include <stdlib.h>
