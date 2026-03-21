@@ -6,7 +6,7 @@ jobs:
   Renovate:
     # renovate: depName=ubuntu
     runs-on: ubuntu-22.04
-    if: ${{ github.repository == 'mcmarius/oop-template' }}
+    if: ${{ github.repository == 'mcmarius/andreio59012/fmi-poo-tema-1-ticketing-system' }}
     steps:
       - name: Checkout
         # renovate: datasource=github-tags depName=actions/checkout versioning=loose
