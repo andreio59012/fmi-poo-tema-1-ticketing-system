@@ -1,4 +1,6 @@
 /*
+Tot codul din proiect mutat intr-un singur fisier.
+
 Programul simuleaza o platforma de gestionare a aplicatiilor software, similara cu GitHub/GitLab.
 Utilizatorii pot sa creeze si sa modifice proiecte, care au fisiere, un sistem de permisiuni,
 **tickete** pentru raportarea problemelor, si pull-requesti pentru propuneri de modificari.
@@ -21,17 +23,633 @@ Operatii posibile:
 	inchidere/deschidere (owner sau minim REVIEWER)
 - Pull Request-uri: creare (minim MAINTAINER), modificare titlu/descriere/fisiere
 	(doar owner-ul PR-ului), schimbare stare (owner-ul poate pune DRAFT sau AWAITING REVIEW,
-	un REVIEWER poate pune NEEDS CHANGES, MERGED sau BLOCKED; la MERGED fisierele schimbate 
+	un REVIEWER poate pune NEEDS CHANGES, MERGED sau BLOCKED; la MERGED fisierele schimbate
 	in PR sunt schimbate si in proiect)
 */
 
 #include <iostream>
 #include <cstring>
-#include <stdlib.h>
-#include "Project.h"
-#include "PullRequest.h"
-#include "Ticket.h"
-#include "User.h"
+
+const int FIXED_ARRAY_SIZE = 100;
+const int FIXED_STRING_SIZE = 256;
+const bool LOG_CONSTRUCTORS = false;
+const char STRING_PRIVATE[] = "(PRIVATE)";
+
+class User
+{
+private:
+    char username[FIXED_STRING_SIZE];
+    char password[FIXED_STRING_SIZE];
+
+public:
+    // Constructor de initializare cu parametrii
+    explicit User(
+        const char* username_ = "",
+        const char* password_ = ""
+    ) {
+        strncpy(username, username_, FIXED_STRING_SIZE - 1);
+        username[FIXED_STRING_SIZE - 1] = '\0';
+        strncpy(password, password_, FIXED_STRING_SIZE - 1);
+        password[FIXED_STRING_SIZE - 1] = '\0';
+
+        if (LOG_CONSTRUCTORS)
+            std::cout << "'User': Constructor with parameters for username '" << username << "'.\n";
+    }
+
+    // Constructor de mutare
+    User(User&& other) noexcept {
+        strncpy(username, other.username, FIXED_STRING_SIZE);
+        strncpy(password, other.password, FIXED_STRING_SIZE);
+
+        if (LOG_CONSTRUCTORS)
+            std::cout << "'User': Move Constructor for username '" << username << "'.\n";
+    }
+
+    // Constructor de copiere
+    User(const User& other) {
+        strncpy(username, other.username, FIXED_STRING_SIZE);
+        strncpy(password, other.password, FIXED_STRING_SIZE);
+
+        if (LOG_CONSTRUCTORS)
+            std::cout << "'User': Copy Constructor for username '" << username << "'.\n";
+    }
+
+    // Operator de copiere
+    User& operator=(const User& other) {
+        strncpy(username, other.username, FIXED_STRING_SIZE);
+        strncpy(password, other.password, FIXED_STRING_SIZE);
+
+        if (LOG_CONSTRUCTORS)
+            std::cout << "'User': Copy Operator for username '" << username << "'.\n";
+        return *this;
+    }
+
+    // Afisarea datelor
+    friend std::ostream& operator<<(std::ostream& os, const User& p) {
+        os << "User:\n\tUsername: " << p.username << "\n\tPassword: " << p.password << "\n";
+        return os;
+    }
+
+    // Destructor
+    ~User() {
+        if (LOG_CONSTRUCTORS)
+            std::cout << "'User': Destructor for username '" << username << "'.\n";
+    }
+
+    // Returneaza username-ul utilizatorului
+    const char* getUsername() const { return username; }
+
+    // Verifica daca parola data coincide cu parola utilizatorului
+    bool isPasswordCorrect(const char* password_) const {
+        return strncmp(password, password_, FIXED_STRING_SIZE) == 0;
+    }
+
+    // Modifica username-ul (daca auth poate face asta)
+    void setUsername(const User* auth, const char* username_) {
+        if (auth == this) {
+            strncpy(username, username_, FIXED_STRING_SIZE - 1);
+            username[FIXED_STRING_SIZE - 1] = '\0';
+        }
+    }
+
+    // Modifica parola (daca auth poate face asta)
+    void setPassword(const User* auth, const char* password_) {
+        if (auth == this) {
+            strncpy(password, password_, FIXED_STRING_SIZE - 1);
+            password[FIXED_STRING_SIZE - 1] = '\0';
+        }
+    }
+};
+
+const int USER_PERM_NONE = 0;
+const int USER_PERM_VIEWER = 1;
+const int USER_PERM_MAINTAINER = 2;
+const int USER_PERM_REVIEWER = 3;
+const int USER_PERM_OWNER = 4;
+
+struct UserPerm {
+    User* user;
+    int perm;
+};
+
+struct File {
+    char path[FIXED_STRING_SIZE];
+    char content[FIXED_STRING_SIZE];
+};
+
+class Project
+{
+private:
+    char title[FIXED_STRING_SIZE];
+    char description[FIXED_STRING_SIZE];
+    int default_user_perm;
+
+    int user_perm_count = 0;
+    UserPerm user_perms[FIXED_ARRAY_SIZE];
+
+    int file_count = 0;
+    File files[FIXED_ARRAY_SIZE];
+
+public:
+    //Constructor cu parametrii
+    explicit Project(
+        const char* title_ = "",
+        const char* description_ = "",
+        const int default_user_perm_ = USER_PERM_NONE
+    ) :
+        default_user_perm(default_user_perm_),
+        user_perm_count(0),
+        user_perms(),
+        file_count(0),
+        files()
+    {
+        strncpy(title, title_, FIXED_STRING_SIZE - 1);
+        title[FIXED_STRING_SIZE - 1] = '\0';
+        strncpy(description, description_, FIXED_STRING_SIZE - 1);
+        description[FIXED_STRING_SIZE - 1] = '\0';
+
+        if (LOG_CONSTRUCTORS)
+            std::cout << "'Project': Constructor with parameters.\n";
+    }
+
+    // Constructor de copiere
+    Project(const Project& other) :
+        default_user_perm(other.default_user_perm),
+        user_perm_count(other.user_perm_count),
+        file_count(other.file_count)
+    {
+        strncpy(title, other.title, FIXED_STRING_SIZE);
+        strncpy(description, other.description, FIXED_STRING_SIZE);
+
+        for (int i = 0; i < other.user_perm_count; i++)
+            user_perms[i] = other.user_perms[i];
+
+        for (int i = 0; i < other.file_count; i++)
+            files[i] = other.files[i];
+
+        if (LOG_CONSTRUCTORS)
+            std::cout << "'Project': Copy Constructor.\n";
+    }
+
+    // Operator de copiere
+    Project& operator=(const Project& other) {
+        strncpy(title, other.title, FIXED_STRING_SIZE);
+        strncpy(description, other.description, FIXED_STRING_SIZE);
+        default_user_perm = other.default_user_perm;
+        user_perm_count = other.user_perm_count;
+        file_count = other.file_count;
+
+        for (int i = 0; i < other.user_perm_count; i++)
+            user_perms[i] = other.user_perms[i];
+
+        for (int i = 0; i < other.file_count; i++)
+            files[i] = other.files[i];
+
+        if (LOG_CONSTRUCTORS)
+            std::cout << "'Project': Copy Operator.\n";
+        return *this;
+    }
+
+    // Destructor
+    ~Project() {
+        if (LOG_CONSTRUCTORS)
+            std::cout << "'Project': Destructor.\n";
+    }
+
+    // Afisarea datelor
+    friend std::ostream& operator<<(std::ostream& os, const Project& p) {
+        os << "Project:\n\tTitle: " << p.title << "\n\tDescription: " << p.description << "\n\tDefault User Permission: " << p.default_user_perm << "\n";
+
+        if (p.user_perm_count > 0) {
+            os << "\tUsers: ";
+            for (int i = 0; i < p.user_perm_count; i++)
+                os << p.user_perms[i].user->getUsername() << " (" << p.user_perms[i].perm << "), ";
+            os << '\n';
+        }
+
+        if (p.file_count > 0) {
+            os << "\tFiles: ";
+            for (int i = 0; i < p.file_count; i++)
+                os << p.files[i].path << ": " << p.files[i].content << "; ";
+            os << '\n';
+        }
+
+        return os;
+    }
+
+    // Returneaza permisiunea unui utilizator in proiect; daca nu are permisiune explicita, returneaza permisiunea implicita
+    int getUserPerm(const User* user) const {
+        for (int i = 0; i < user_perm_count; i++)
+            if (user_perms[i].user == user)
+                return user_perms[i].perm;
+        return default_user_perm;
+    }
+
+    // Seteaza permisiunea unui utilizator in proiect; necesita ca auth sa fie OWNER
+    void setUserPerm(const User* auth, User* user, const int user_perm) {
+        if (user_perm_count > 0 && getUserPerm(auth) < USER_PERM_OWNER)
+            return;
+
+        for (int i = 0; i < user_perm_count; i++)
+            if (user_perms[i].user == user) {
+                user_perms[i].perm = user_perm;
+                return;
+            }
+
+        if (user_perm_count < FIXED_ARRAY_SIZE - 1) {
+            user_perms[user_perm_count].user = user;
+            user_perms[user_perm_count].perm = user_perm;
+            user_perm_count++;
+        }
+    }
+
+    // Returneaza permisiunea implicita pentru utilizatori fara permisiune explicita
+    int getDefaultUserPerm() const { return default_user_perm; }
+
+    // Modifica permisiunea implicita; necesita OWNER
+    void setDefaultUserPerm(const User* auth, const int user_perm) {
+        if (getUserPerm(auth) >= USER_PERM_OWNER)
+            default_user_perm = user_perm;
+    }
+
+    // Returneaza titlul proiectului daca auth are minim VIEWER, altfel STRING_PRIVATE
+    const char* getTitle(const User* auth) const {
+        if (getUserPerm(auth) >= USER_PERM_VIEWER)
+            return title;
+        return STRING_PRIVATE;
+    }
+
+    // Modifica titlul proiectului; necesita OWNER
+    void setTitle(const User* auth, const char* title_) {
+        if (getUserPerm(auth) >= USER_PERM_OWNER) {
+            strncpy(title, title_, FIXED_STRING_SIZE - 1);
+            title[FIXED_STRING_SIZE - 1] = '\0';
+        }
+    }
+
+    // Returneaza descrierea proiectului daca auth are minim VIEWER, altfel STRING_PRIVATE
+    const char* getDescription(const User* auth) const {
+        if (getUserPerm(auth) >= USER_PERM_VIEWER)
+            return description;
+        return STRING_PRIVATE;
+    }
+
+    // Modifica descrierea proiectului; necesita OWNER
+    void setDescription(const User* auth, const char* description_) {
+        if (getUserPerm(auth) >= USER_PERM_OWNER) {
+            strncpy(description, description_, FIXED_STRING_SIZE - 1);
+            description[FIXED_STRING_SIZE - 1] = '\0';
+        }
+    }
+
+    // Returneaza numarul de fisiere din proiect daca auth are minim VIEWER, altfel 0
+    int getFileCount(const User* auth) const {
+        if (getUserPerm(auth) >= USER_PERM_VIEWER)
+            return file_count;
+        return 0;
+    }
+
+    // Returneaza lista de fisiere daca auth are minim VIEWER, altfel nullptr
+    const File* getFiles(const User* auth) const {
+        if (getUserPerm(auth) >= USER_PERM_VIEWER)
+            return files;
+        return nullptr;
+    }
+
+    // Adauga sau modifica un fisier in proiect; necesita minim MAINTAINER
+    void setFileContent(const User* auth, const char* file_path, const char* file_content) {
+        if (getUserPerm(auth) < USER_PERM_MAINTAINER)
+            return;
+
+        for (int i = 0; i < file_count; i++)
+            if (strncmp(files[i].path, file_path, FIXED_STRING_SIZE) == 0) {
+                strncpy(files[i].content, file_content, FIXED_STRING_SIZE - 1);
+                files[i].content[FIXED_STRING_SIZE - 1] = '\0';
+                return;
+            }
+
+        if (file_count < FIXED_ARRAY_SIZE - 1) {
+            strncpy(files[file_count].path, file_path, FIXED_STRING_SIZE - 1);
+            files[file_count].path[FIXED_STRING_SIZE - 1] = '\0';
+            strncpy(files[file_count].content, file_content, FIXED_STRING_SIZE - 1);
+            files[file_count].content[FIXED_STRING_SIZE - 1] = '\0';
+            file_count++;
+        }
+    }
+};
+
+class Ticket
+{
+private:
+    User* owner;
+    Project* project;
+    bool closed;
+    char title[FIXED_STRING_SIZE];
+    char description[FIXED_STRING_SIZE];
+
+public:
+    //Constructor de initializare cu parametrii
+    explicit Ticket(
+        User* owner_ = nullptr,
+        Project* project_ = nullptr,
+        const bool closed_ = false,
+        const char* title_ = "",
+        const char* description_ = ""
+    ) :
+        owner(owner_),
+        project(project_),
+        closed(closed_)
+    {
+        strncpy(title, title_, FIXED_STRING_SIZE - 1);
+        title[FIXED_STRING_SIZE - 1] = '\0';
+        strncpy(description, description_, FIXED_STRING_SIZE - 1);
+        description[FIXED_STRING_SIZE - 1] = '\0';
+
+        if (LOG_CONSTRUCTORS)
+            std::cout << "'Ticket': Constructor with parameters.\n";
+    }
+
+    // Constructor de copiere
+    Ticket(const Ticket& other) :
+        owner(other.owner),
+        project(other.project),
+        closed(other.closed)
+    {
+        strncpy(title, other.title, FIXED_STRING_SIZE);
+        strncpy(description, other.description, FIXED_STRING_SIZE);
+
+        if (LOG_CONSTRUCTORS)
+            std::cout << "'Ticket': Copy Constructor.\n";
+    }
+
+    // Operator de copiere
+    Ticket& operator=(const Ticket& other) {
+        owner = other.owner;
+        project = other.project;
+        closed = other.closed;
+        strncpy(title, other.title, FIXED_STRING_SIZE);
+        strncpy(description, other.description, FIXED_STRING_SIZE);
+
+        if (LOG_CONSTRUCTORS)
+            std::cout << "'Ticket': Copy Operator.\n";
+        return *this;
+    }
+
+    // Afisarea datelor
+    friend std::ostream& operator<<(std::ostream& os, const Ticket& p) {
+        os << "Ticket:\n\tTitle: " << p.title << "\n\tDescription: " << p.description << "\n\tOwner: " << p.owner->getUsername() << "\n\tClosed: " << p.closed << "\n";
+        return os;
+    }
+
+    // Destructor
+    ~Ticket() {
+        if (LOG_CONSTRUCTORS)
+            std::cout << "'Ticket': Destructor.\n";
+    }
+
+    // Returneaza utilizatorul care a creat ticketul
+    User* getOwner() const { return owner; }
+
+    // Returneaza proiectul caruia ii apartine ticketul
+    Project* getProject() const { return project; }
+
+    // Returneaza titlul ticketului daca auth are minim VIEWER in proiect, altfel STRING_PRIVATE
+    const char* getTitle(const User* auth) const {
+        if (project->getUserPerm(auth) >= USER_PERM_VIEWER)
+            return title;
+        return STRING_PRIVATE;
+    }
+
+    // Modifica titlul ticketului; doar owner-ul ticketului poate face asta
+    void setTitle(const User* auth, const char* title_) {
+        if (auth == owner) {
+            strncpy(title, title_, FIXED_STRING_SIZE - 1);
+            title[FIXED_STRING_SIZE - 1] = '\0';
+        }
+    }
+
+    // Returneaza descrierea ticketului daca auth are minim VIEWER in proiect, altfel STRING_PRIVATE
+    const char* getDescription(const User* auth) const {
+        if (project->getUserPerm(auth) >= USER_PERM_VIEWER)
+            return description;
+        return STRING_PRIVATE;
+    }
+
+    // Modifica descrierea ticketului; doar owner-ul ticketului poate face asta
+    void setDescription(const User* auth, const char* description_) {
+        if (auth == owner) {
+            strncpy(description, description_, FIXED_STRING_SIZE - 1);
+            description[FIXED_STRING_SIZE - 1] = '\0';
+        }
+    }
+
+    // Returneaza daca ticketul este inchis sau nu
+    bool getClosed() const { return closed; }
+
+    // Schimba starea ticketului; poate fi facut de owner sau de un utilizator cu minim REVIEWER
+    void setClosed(const User* auth, const bool closed_) {
+        if (auth == owner || project->getUserPerm(auth) >= USER_PERM_REVIEWER)
+            closed = closed_;
+    }
+};
+
+const int PR_STATE_DRAFT = 0;
+const int PR_STATE_AWAITING_REVIEW = 1;
+const int PR_STATE_NEEDS_CHANGES = 2;
+const int PR_STATE_MERGED = 3;
+const int PR_STATE_BLOCKED = 4;
+
+class PullRequest
+{
+private:
+    User* owner;
+    Project* project;
+    int state;
+    char title[FIXED_STRING_SIZE];
+    char description[FIXED_STRING_SIZE];
+    char review_comment[FIXED_STRING_SIZE];
+    int changed_file_count = 0;
+    File changed_files[FIXED_ARRAY_SIZE];
+
+public:
+    // Constructor de initializare cu parametrii
+    explicit PullRequest(
+        User* owner_ = nullptr,
+        Project* project_ = nullptr,
+        const char* title_ = "",
+        const char* description_ = ""
+    ) :
+        owner(owner_),
+        project(project_),
+        state(PR_STATE_DRAFT),
+        changed_file_count(0),
+        changed_files()
+    {
+        strncpy(title, title_, FIXED_STRING_SIZE - 1);
+        title[FIXED_STRING_SIZE - 1] = '\0';
+        strncpy(description, description_, FIXED_STRING_SIZE - 1);
+        description[FIXED_STRING_SIZE - 1] = '\0';
+        review_comment[0] = '\0';
+
+        if (LOG_CONSTRUCTORS)
+            std::cout << "'PullRequest': Constructor with parameters.\n";
+    }
+
+    // Constructor de copiere
+    PullRequest(const PullRequest& other) :
+        owner(other.owner),
+        project(other.project),
+        state(other.state),
+        changed_file_count(other.changed_file_count)
+    {
+        strncpy(title, other.title, FIXED_STRING_SIZE);
+        strncpy(description, other.description, FIXED_STRING_SIZE);
+        strncpy(review_comment, other.review_comment, FIXED_STRING_SIZE);
+
+        for (int i = 0; i < other.changed_file_count; i++)
+            changed_files[i] = other.changed_files[i];
+
+        if (LOG_CONSTRUCTORS)
+            std::cout << "'PullRequest': Copy Constructor.\n";
+    }
+
+    // Operator de copiere
+    PullRequest& operator=(const PullRequest& other) {
+        owner = other.owner;
+        project = other.project;
+        state = other.state;
+        changed_file_count = other.changed_file_count;
+        strncpy(title, other.title, FIXED_STRING_SIZE);
+        strncpy(description, other.description, FIXED_STRING_SIZE);
+        strncpy(review_comment, other.review_comment, FIXED_STRING_SIZE);
+
+        for (int i = 0; i < other.changed_file_count; i++)
+            changed_files[i] = other.changed_files[i];
+
+        if (LOG_CONSTRUCTORS)
+            std::cout << "'PullRequest': Copy Operator.\n";
+        return *this;
+    }
+
+    // Afisarea datelor
+    friend std::ostream& operator<<(std::ostream& os, const PullRequest& p) {
+        os << "Pull Request:\n\tTitle: " << p.title << "\n\tDescription: " << p.description << "\n\tOwner: " << p.owner->getUsername() << "\n\tState: " << p.state << "\n\tReview Comment: " << p.review_comment << "\n";
+
+        if (p.changed_file_count > 0) {
+            os << "\tFiles: ";
+            for (int i = 0; i < p.changed_file_count; i++)
+                os << p.changed_files[i].path << ": " << p.changed_files[i].content << "; ";
+            os << '\n';
+        }
+
+        return os;
+    }
+
+    // Destructor
+    ~PullRequest() {
+        if (LOG_CONSTRUCTORS)
+            std::cout << "'PullRequest': Destructor.\n";
+    }
+
+    // Returneaza utilizatorul care a creat PR-ul
+    User* getOwner() const { return owner; }
+
+    // Returneaza proiectul caruia ii apartine PR-ul
+    Project* getProject() const { return project; }
+
+    // Returneaza titlul PR-ului daca auth are minim VIEWER in proiect, altfel STRING_PRIVATE
+    const char* getTitle(const User* auth) const {
+        if (project->getUserPerm(auth) >= USER_PERM_VIEWER)
+            return title;
+        return STRING_PRIVATE;
+    }
+
+    // Modifica titlul PR-ului; doar owner-ul PR-ului poate face asta
+    void setTitle(const User* auth, const char* title_) {
+        if (auth == owner) {
+            strncpy(title, title_, FIXED_STRING_SIZE - 1);
+            title[FIXED_STRING_SIZE - 1] = '\0';
+        }
+    }
+
+    // Returneaza descrierea PR-ului daca auth are minim VIEWER in proiect, altfel STRING_PRIVATE
+    const char* getDescription(const User* auth) const {
+        if (project->getUserPerm(auth) >= USER_PERM_VIEWER)
+            return description;
+        return STRING_PRIVATE;
+    }
+
+    // Modifica descrierea PR-ului; doar owner-ul PR-ului poate face asta
+    void setDescription(const User* auth, const char* description_) {
+        if (auth == owner) {
+            strncpy(description, description_, FIXED_STRING_SIZE - 1);
+            description[FIXED_STRING_SIZE - 1] = '\0';
+        }
+    }
+
+    // Returneaza starea curenta a PR-ului
+    int getState() const { return state; }
+
+    // Schimba starea PR-ului cu un comentariu de review; owner-ul poate seta DRAFT/AWAITING_REVIEW,
+    // un REVIEWER poate seta NEEDS_CHANGES/MERGED/BLOCKED; la MERGED fisierele sunt aplicate pe proiect
+    void setState(const User* auth, const int state_, const char* review_comment_ = "") {
+        if (state == PR_STATE_MERGED)
+            return;
+
+        if (
+            (
+                project->getUserPerm(auth) >= USER_PERM_REVIEWER &&
+                (state_ == PR_STATE_NEEDS_CHANGES || state_ == PR_STATE_MERGED || state_ == PR_STATE_BLOCKED)
+                ) || (
+                    auth == owner &&
+                    (state_ == PR_STATE_DRAFT || state_ == PR_STATE_AWAITING_REVIEW)
+                    )
+            ) {
+            state = state_;
+            strncpy(review_comment, review_comment_, FIXED_STRING_SIZE - 1);
+            review_comment[FIXED_STRING_SIZE - 1] = '\0';
+
+            if (state == PR_STATE_MERGED)
+                for (int i = 0; i < changed_file_count; i++)
+                    project->setFileContent(auth, changed_files[i].path, changed_files[i].content);
+        }
+    }
+
+    // Returneaza numarul de fisiere modificate daca auth are minim VIEWER, altfel 0
+    int getChangedFileCount(const User* auth) const {
+        if (project->getUserPerm(auth) >= USER_PERM_VIEWER)
+            return changed_file_count;
+        return 0;
+    }
+
+    // Returneaza lista de fisiere modificate daca auth are minim VIEWER, altfel nullptr
+    const File* getChangedFiles(const User* auth) const {
+        if (project->getUserPerm(auth) >= USER_PERM_VIEWER)
+            return changed_files;
+        return nullptr;
+    }
+
+    // Adauga sau modifica un fisier in lista de fisiere schimbate ale PR-ului; doar owner-ul poate face asta
+    void setChangedFileContent(const User* auth, const char* file_path, const char* file_content) {
+        if (auth != owner)
+            return;
+
+        for (int i = 0; i < changed_file_count; i++)
+            if (strncmp(changed_files[i].path, file_path, FIXED_STRING_SIZE) == 0) {
+                strncpy(changed_files[i].content, file_content, FIXED_STRING_SIZE - 1);
+                changed_files[i].content[FIXED_STRING_SIZE - 1] = '\0';
+                return;
+            }
+
+        if (changed_file_count < FIXED_ARRAY_SIZE - 1) {
+            strncpy(changed_files[changed_file_count].path, file_path, FIXED_STRING_SIZE - 1);
+            changed_files[changed_file_count].path[FIXED_STRING_SIZE - 1] = '\0';
+            strncpy(changed_files[changed_file_count].content, file_content, FIXED_STRING_SIZE - 1);
+            changed_files[changed_file_count].content[FIXED_STRING_SIZE - 1] = '\0';
+            changed_file_count++;
+        }
+    }
+};
 
 struct Database {
 	int user_count = 0;
@@ -344,7 +962,7 @@ void cli_user_update(Database* db, User*& auth, User* user) {
 
 	std::cout << "Updating User...\nNew Username: ";
 	char username[FIXED_STRING_SIZE];
-	
+
 	std::cin.getline(username, FIXED_STRING_SIZE);
 	user->setUsername(auth, username);
 
@@ -362,7 +980,7 @@ void cli_user_login(Database* db, User*& auth) {
 
 	std::cout << "Logging in...\nUsername: ";
 	char username[FIXED_STRING_SIZE];
-	
+
 	std::cin.getline(username, FIXED_STRING_SIZE);
 
 	User* target = nullptr;
@@ -409,7 +1027,7 @@ void cli_user_signup(Database* db, User*& auth) {
 
 	std::cout << "Signing up...\nUsername: ";
 	char username[FIXED_STRING_SIZE];
-	
+
 	std::cin.getline(username, FIXED_STRING_SIZE);
 
 	std::cout << "Password: ";
@@ -559,7 +1177,7 @@ void cli_project_create(Database* db, User*& auth) {
 
 	std::cout << "Creating New Project...\nProject Title: ";
 	char title[FIXED_STRING_SIZE];
-	
+
 	std::cin.getline(title, FIXED_STRING_SIZE);
 
 	std::cout << "Project Description: ";
@@ -584,7 +1202,7 @@ void cli_project_update(Database* db, User*& auth, Project* project) {
 
 	std::cout << "Modifying Project Details...\nTitle: ";
 	char title[FIXED_STRING_SIZE];
-	
+
 	std::cin.getline(title, FIXED_STRING_SIZE);
 	project->setTitle(auth, title);
 
@@ -605,7 +1223,7 @@ void cli_project_modify_users(Database* db, User*& auth, Project* project) {
 
 	std::cout << "Modifying Project User Perms...\nUsername: ";
 	char username[FIXED_STRING_SIZE];
-	
+
 	std::cin.getline(username, FIXED_STRING_SIZE);
 
 	User* user = nullptr;
@@ -740,7 +1358,7 @@ void cli_ticket_create(Database* db, User*& auth, Project* project) {
 
 	std::cout << "Creating Ticket...\nTicket Title: ";
 	char title[FIXED_STRING_SIZE];
-	
+
 	std::cin.getline(title, FIXED_STRING_SIZE);
 
 	std::cout << "Ticket Description: ";
@@ -763,7 +1381,7 @@ void cli_ticket_update(Database* db, User*& auth, Ticket* ticket) {
 
 	std::cout << "Updating Ticket Details...\nTitle: ";
 	char title[FIXED_STRING_SIZE];
-	
+
 	std::cin.getline(title, FIXED_STRING_SIZE);
 	ticket->setTitle(auth, title);
 
@@ -905,7 +1523,7 @@ void cli_pr_create(Database* db, User*& auth, Project* project) {
 
 	std::cout << "Creating PR...\nPR Title: ";
 	char title[FIXED_STRING_SIZE];
-	
+
 	std::cin.getline(title, FIXED_STRING_SIZE);
 
 	std::cout << "PR Description: ";
@@ -928,7 +1546,7 @@ void cli_pr_update(Database* db, User*& auth, PullRequest* pr) {
 
 	std::cout << "Updating PR Details...\nTitle: ";
 	char title[FIXED_STRING_SIZE];
-	
+
 	std::cin.getline(title, FIXED_STRING_SIZE);
 	pr->setTitle(auth, title);
 
@@ -959,7 +1577,7 @@ void cli_pr_state_update(Database* db, User*& auth, PullRequest* pr) {
 
 	std::cout << "Review Comment: ";
 	char review_comment[FIXED_STRING_SIZE];
-	
+
 	std::cin.getline(review_comment, FIXED_STRING_SIZE);
 
 	pr->setState(auth, state, review_comment);
@@ -976,7 +1594,7 @@ void cli_pr_file_update(Database* db, User*& auth, PullRequest* pr) {
 
 	std::cout << "Updating PR File...\nFile Name: ";
 	char file_name[FIXED_STRING_SIZE];
-	
+
 	std::cin.getline(file_name, FIXED_STRING_SIZE);
 
 	std::cout << "File Content: ";

@@ -10,6 +10,7 @@ private:
     char password[FIXED_STRING_SIZE];
 
 public:
+    // Constructor de initializare cu parametrii
     explicit User(
         const char* username_ = "",
         const char* password_ = ""
@@ -23,6 +24,7 @@ public:
             std::cout << "'User': Constructor with parameters for username '" << username << "'.\n";
     }
 
+    // Constructor de mutare
     User(User&& other) noexcept {
         strncpy(username, other.username, FIXED_STRING_SIZE);
         strncpy(password, other.password, FIXED_STRING_SIZE);
@@ -31,6 +33,7 @@ public:
             std::cout << "'User': Move Constructor for username '" << username << "'.\n";
     }
 
+    // Constructor de copiere
     User(const User& other) {
         strncpy(username, other.username, FIXED_STRING_SIZE);
         strncpy(password, other.password, FIXED_STRING_SIZE);
@@ -39,6 +42,7 @@ public:
             std::cout << "'User': Copy Constructor for username '" << username << "'.\n";
     }
 
+    // Operator de copiere
     User& operator=(const User& other) {
         strncpy(username, other.username, FIXED_STRING_SIZE);
         strncpy(password, other.password, FIXED_STRING_SIZE);
@@ -48,22 +52,27 @@ public:
         return *this;
     }
 
+    // Afisarea datelor
     friend std::ostream& operator<<(std::ostream& os, const User& p) {
         os << "User:\n\tUsername: " << p.username << "\n\tPassword: " << p.password << "\n";
         return os;
     }
 
+    // Destructor
     ~User() {
         if (LOG_CONSTRUCTORS)
             std::cout << "'User': Destructor for username '" << username << "'.\n";
     }
 
+    // Returneaza username-ul utilizatorului
     const char* getUsername() const { return username; }
 
+    // Verifica daca parola data coincide cu parola utilizatorului
     bool isPasswordCorrect(const char* password_) const {
         return strncmp(password, password_, FIXED_STRING_SIZE) == 0;
     }
 
+    // Modifica username-ul (daca auth poate face asta)
     void setUsername(const User* auth, const char* username_) {
         if (auth == this) {
             strncpy(username, username_, FIXED_STRING_SIZE - 1);
@@ -71,6 +80,7 @@ public:
         }
     }
 
+    // Modifica parola (daca auth poate face asta)
     void setPassword(const User* auth, const char* password_) {
         if (auth == this) {
             strncpy(password, password_, FIXED_STRING_SIZE - 1);

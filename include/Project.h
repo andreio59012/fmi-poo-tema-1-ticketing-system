@@ -34,6 +34,7 @@ private:
     File files[FIXED_ARRAY_SIZE];
 
 public:
+    //Constructor cu parametrii
     explicit Project(
         const char* title_ = "",
         const char* description_ = "",
@@ -54,6 +55,7 @@ public:
             std::cout << "'Project': Constructor with parameters.\n";
     }
 
+    // Constructor de copiere
     Project(const Project& other) :
         default_user_perm(other.default_user_perm),
         user_perm_count(other.user_perm_count),
@@ -72,6 +74,7 @@ public:
             std::cout << "'Project': Copy Constructor.\n";
     }
 
+    // Operator de copiere
     Project& operator=(const Project& other) {
         strncpy(title, other.title, FIXED_STRING_SIZE);
         strncpy(description, other.description, FIXED_STRING_SIZE);
@@ -90,11 +93,13 @@ public:
         return *this;
     }
 
+    // Destructor
     ~Project() {
         if (LOG_CONSTRUCTORS)
             std::cout << "'Project': Destructor.\n";
     }
 
+    // Afisarea datelor
     friend std::ostream& operator<<(std::ostream& os, const Project& p) {
         os << "Project:\n\tTitle: " << p.title << "\n\tDescription: " << p.description << "\n\tDefault User Permission: " << p.default_user_perm << "\n";
 
@@ -115,6 +120,7 @@ public:
         return os;
     }
 
+    // Returneaza permisiunea unui utilizator in proiect; daca nu are permisiune explicita, returneaza permisiunea implicita
     int getUserPerm(const User* user) const {
         for (int i = 0; i < user_perm_count; i++)
             if (user_perms[i].user == user)
@@ -122,6 +128,7 @@ public:
         return default_user_perm;
     }
 
+    // Seteaza permisiunea unui utilizator in proiect; necesita ca auth sa fie OWNER
     void setUserPerm(const User* auth, User* user, const int user_perm) {
         if (user_perm_count > 0 && getUserPerm(auth) < USER_PERM_OWNER)
             return;
@@ -139,19 +146,23 @@ public:
         }
     }
 
+    // Returneaza permisiunea implicita pentru utilizatori fara permisiune explicita
     int getDefaultUserPerm() const { return default_user_perm; }
 
+    // Modifica permisiunea implicita; necesita OWNER
     void setDefaultUserPerm(const User* auth, const int user_perm) {
         if (getUserPerm(auth) >= USER_PERM_OWNER)
             default_user_perm = user_perm;
     }
 
+    // Returneaza titlul proiectului daca auth are minim VIEWER, altfel STRING_PRIVATE
     const char* getTitle(const User* auth) const {
         if (getUserPerm(auth) >= USER_PERM_VIEWER)
             return title;
         return STRING_PRIVATE;
     }
 
+    // Modifica titlul proiectului; necesita OWNER
     void setTitle(const User* auth, const char* title_) {
         if (getUserPerm(auth) >= USER_PERM_OWNER) {
             strncpy(title, title_, FIXED_STRING_SIZE - 1);
@@ -159,12 +170,14 @@ public:
         }
     }
 
+    // Returneaza descrierea proiectului daca auth are minim VIEWER, altfel STRING_PRIVATE
     const char* getDescription(const User* auth) const {
         if (getUserPerm(auth) >= USER_PERM_VIEWER)
             return description;
         return STRING_PRIVATE;
     }
 
+    // Modifica descrierea proiectului; necesita OWNER
     void setDescription(const User* auth, const char* description_) {
         if (getUserPerm(auth) >= USER_PERM_OWNER) {
             strncpy(description, description_, FIXED_STRING_SIZE - 1);
@@ -172,18 +185,21 @@ public:
         }
     }
 
+    // Returneaza numarul de fisiere din proiect daca auth are minim VIEWER, altfel 0
     int getFileCount(const User* auth) const {
         if (getUserPerm(auth) >= USER_PERM_VIEWER)
             return file_count;
         return 0;
     }
 
+    // Returneaza lista de fisiere daca auth are minim VIEWER, altfel nullptr
     const File* getFiles(const User* auth) const {
         if (getUserPerm(auth) >= USER_PERM_VIEWER)
             return files;
         return nullptr;
     }
 
+    // Adauga sau modifica un fisier in proiect; necesita minim MAINTAINER
     void setFileContent(const User* auth, const char* file_path, const char* file_content) {
         if (getUserPerm(auth) < USER_PERM_MAINTAINER)
             return;
